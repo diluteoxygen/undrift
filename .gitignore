@@ -1,0 +1,26 @@
+# Rust build artifacts
+target/
+**/*.rs.bk
+Cargo.lock
+
+# .NET / C# / WinUI 3 build artifacts
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkginfo.txt
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and scratch
+*.log
+scratch/

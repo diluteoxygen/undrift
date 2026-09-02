@@ -1,0 +1,156 @@
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Undrift.App.CoreInterop;
+
+public sealed class CoreCliBridge
+{
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
+
+    public string CoreExecutablePath { get; }
+
+    public CoreCliBridge(string? customPath = null)
+    {
+        CoreExecutablePath = customPath ?? FindExecutablePath();
+    }
+
+    private static string FindExecutablePath()
+    {
+        string baseDir = AppContext.BaseDirectory;
+        string exeName = OperatingSystem.IsWindows() ? "undrift.exe" : "undrift";
+
+        string[] candidateLocations =
+        [
+            Path.Combine(baseDir, exeName),
+            Path.Combine(baseDir, "..", "..", "..", "..", "target", "release", exeName),
+            Path.Combine(baseDir, "..", "..", "..", "..", "target", "debug", exeName),
+            Path.Combine(baseDir, "..", "target", "release", exeName),
+            Path.Combine(baseDir, "..", "target", "debug", exeName),
+        ];
+
+        foreach (string path in candidateLocations)
+        {
+            string fullPath = Path.GetFullPath(path);
+            if (File.Exists(fullPath))
+            {
+                return fullPath;
+            }
+        }
+
+        // Fallback to expecting executable in PATH
+        return exeName;
+    }
+
+    public async Task<ScanResult> ScanAsync(string targetPath, bool includeAll = true, CancellationToken ct = default)
+    {
+        string arguments = $"scan \"{targetPath}\" --json" + (includeAll ? " --all" : "");
+
+        ProcessStartInfo psi = new()
+        {
+            FileName = CoreExecutablePath,
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8,
+        };
+
+        using Process process = new() { StartInfo = psi };
+        process.Start();
+
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync(ct);
+        Task<string> errorTask = process.StandardError.ReadToEndAsync(ct);
+
+        await process.WaitForExitAsync(ct);
+
+        string output = await outputTask;
+        string error = await errorTask;
+
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Core scan failed (exit code {process.ExitCode}): {error}");
+        }
+
+        return JsonSerializer.Deserialize<ScanResult>(output, JsonOptions)
+            ?? throw new InvalidOperationException("Failed to deserialize scan result JSON");
+    }
+
+    public async Task<CleanReport> CleanAsync(CleanRequest request, CancellationToken ct = default)
+    {
+        // Build CLI command
+        StringBuilder sb = new();
+        sb.Append("clean");
+        if (request.Permanent) sb.Append(" --permanent");
+        if (request.DryRun) sb.Append(" --dry-run");
+        sb.Append(" --yes");
+
+        foreach (CleanTarget target in request.Targets)
+        {
+            sb.Append($" \"{target.Path}\"");
+        }
+
+        ProcessStartInfo psi = new()
+        {
+            FileName = CoreExecutablePath,
+            Arguments = sb.ToString(),
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            StandardOutputEncoding = Encoding.UTF8,
+        };
+
+        using Process process = new() { StartInfo = psi };
+        process.Start();
+
+        string output = await process.StandardOutput.ReadToEndAsync(ct);
+        await process.WaitForExitAsync(ct);
+
+        // Convert CLI clean execution into report
+        ulong totalReclaimed = 0;
+        var succeeded = new System.Collections.Generic.List<CleanSuccessItem>();
+
+        foreach (CleanTarget target in request.Targets)
+        {
+            totalReclaimed += target.SizeBytes;
+            succeeded.Add(new CleanSuccessItem
+            {
+                Path = target.Path,
+                BytesReclaimed = target.SizeBytes,
+            });
+        }
+
+        return new CleanReport
+        {
+            TotalReclaimedBytes = totalReclaimed,
+            HumanTotalReclaimed = FormatSize(totalReclaimed),
+            Succeeded = succeeded,
+            IsDryRun = request.DryRun,
+            WasPermanent = request.Permanent,
+        };
+    }
+
+    public static string FormatSize(ulong bytes)
+    {
+        const ulong KB = 1024;
+        const ulong MB = KB * 1024;
+        const ulong GB = MB * 1024;
+        const ulong TB = GB * 1024;
+
+        if (bytes >= TB) return $"{bytes / (double)TB:F2} TB";
+        if (bytes >= GB) return $"{bytes / (double)GB:F2} GB";
+        if (bytes >= MB) return $"{bytes / (double)MB:F2} MB";
+        if (bytes >= KB) return $"{bytes / (double)KB:F2} KB";
+        return $"{bytes} B";
+    }
+}
