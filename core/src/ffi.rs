@@ -35,8 +35,8 @@ pub unsafe extern "C" fn undrift_free_string(ptr: *mut c_char) {
 
 /// Returns library version string
 #[unsafe(no_mangle)]
-pub extern "C" fn undrift_version() -> *const c_char {
-    c"0.1.0".as_ptr()
+pub extern "C" fn undrift_version() -> *mut c_char {
+    CString::new(env!("CARGO_PKG_VERSION")).unwrap().into_raw()
 }
 
 /// Performs a scan on a given directory path and returns JSON results

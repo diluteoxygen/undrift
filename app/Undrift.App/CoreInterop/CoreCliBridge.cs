@@ -92,7 +92,7 @@ public sealed class CoreCliBridge
         sb.Append("clean");
         if (request.Permanent) sb.Append(" --permanent");
         if (request.DryRun) sb.Append(" --dry-run");
-        sb.Append(" --yes");
+        sb.Append(" --yes --json");
 
         foreach (CleanTarget target in request.Targets)
         {
@@ -113,31 +113,21 @@ public sealed class CoreCliBridge
         using Process process = new() { StartInfo = psi };
         process.Start();
 
-        string output = await process.StandardOutput.ReadToEndAsync(ct);
+        Task<string> outputTask = process.StandardOutput.ReadToEndAsync(ct);
+        Task<string> errorTask = process.StandardError.ReadToEndAsync(ct);
+
         await process.WaitForExitAsync(ct);
 
-        // Convert CLI clean execution into report
-        ulong totalReclaimed = 0;
-        var succeeded = new System.Collections.Generic.List<CleanSuccessItem>();
+        string output = await outputTask;
+        string error = await errorTask;
 
-        foreach (CleanTarget target in request.Targets)
+        if (process.ExitCode != 0)
         {
-            totalReclaimed += target.SizeBytes;
-            succeeded.Add(new CleanSuccessItem
-            {
-                Path = target.Path,
-                BytesReclaimed = target.SizeBytes,
-            });
+            throw new InvalidOperationException($"Core clean failed (exit code {process.ExitCode}): {error}");
         }
 
-        return new CleanReport
-        {
-            TotalReclaimedBytes = totalReclaimed,
-            HumanTotalReclaimed = FormatSize(totalReclaimed),
-            Succeeded = succeeded,
-            IsDryRun = request.DryRun,
-            WasPermanent = request.Permanent,
-        };
+        return JsonSerializer.Deserialize<CleanReport>(output, JsonOptions)
+            ?? throw new InvalidOperationException("Failed to deserialize clean report JSON");
     }
 
     public static string FormatSize(ulong bytes)

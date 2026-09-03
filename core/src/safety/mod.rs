@@ -59,4 +59,27 @@ impl SafetyPipeline {
         candidate.is_safe = true;
         candidate.default_selected = true;
     }
+
+    /// Lightweight re-check to run immediately before deletion to prevent TOCTOU
+    pub fn pre_clean_check(path: &std::path::Path) -> Option<String> {
+        let path_buf = path.to_path_buf();
+
+        if let Some(err_msg) = GitSafetyChecker::check_path(&path_buf).1 {
+            return Some(err_msg);
+        }
+
+        if let Some(cloud_err) = CloudStorageChecker::is_cloud_placeholder(&path_buf) {
+            return Some(cloud_err);
+        }
+
+        if let Some(lock_err) = InUseChecker::is_locked(&path_buf) {
+            return Some(lock_err);
+        }
+
+        if let Some(reparse_err) = ReparseChecker::is_junction_or_symlink(&path_buf) {
+            return Some(reparse_err);
+        }
+
+        None
+    }
 }

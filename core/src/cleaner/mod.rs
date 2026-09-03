@@ -59,6 +59,14 @@ impl CleanExecutor {
                 continue;
             }
 
+            if let Some(reason) = crate::safety::SafetyPipeline::pre_clean_check(path) {
+                failed.push(CleanItemFailure {
+                    path: path.to_path_buf(),
+                    error_message: format!("Safety re-check failed: {}", reason),
+                });
+                continue;
+            }
+
             let result = if permanent {
                 if path.is_dir() {
                     std::fs::remove_dir_all(path)

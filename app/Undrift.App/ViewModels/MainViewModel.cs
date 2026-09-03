@@ -167,7 +167,14 @@ public partial class MainViewModel : ObservableObject
             ApplyFilter();
             UpdateSelectedMetrics();
 
-            StatusMessage = $"Reclaimed {report.HumanTotalReclaimed}! {toRemove.Count} item(s) moved to {(UseRecycleBin ? "Recycle Bin" : "Permanently Deleted")}.";
+            if (report.Failed != null && report.Failed.Count > 0)
+            {
+                StatusMessage = $"Reclaimed {report.HumanTotalReclaimed}! {toRemove.Count} item(s) cleaned, but {report.Failed.Count} item(s) failed (e.g., {report.Failed.First().ErrorMessage}).";
+            }
+            else
+            {
+                StatusMessage = $"Reclaimed {report.HumanTotalReclaimed}! {toRemove.Count} item(s) moved to {(UseRecycleBin ? "Recycle Bin" : "Permanently Deleted")}.";
+            }
         }
         catch (Exception ex)
         {

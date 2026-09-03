@@ -68,6 +68,10 @@ enum Commands {
         /// Skip interactive confirmation prompt
         #[arg(short = 'y', long)]
         yes: bool,
+
+        /// Output results as JSON for UI / machine consumption
+        #[arg(long)]
+        json: bool,
     },
 
     /// View history log of previous cleanups and reclaimed space
@@ -93,8 +97,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             permanent,
             dry_run,
             yes,
+            json,
         }) => {
-            run_clean(&paths, permanent, dry_run, yes)?;
+            run_clean(&paths, permanent, dry_run, yes, json)?;
         }
         Some(Commands::History) => {
             run_history();
@@ -161,44 +166,47 @@ fn run_clean(
     permanent: bool,
     dry_run: bool,
     auto_confirm: bool,
+    as_json: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!();
-    println!(
-        "════════════════════════════════════════════════════════════════════════════════════════"
-    );
-    println!("  UNDRIFT CLEANUP REVIEW");
-    println!(
-        "════════════════════════════════════════════════════════════════════════════════════════"
-    );
-    let mode = if dry_run {
-        "SIMULATION (Dry-Run)"
-    } else if permanent {
-        "PERMANENT DELETION"
-    } else {
-        "Recycle Bin (Default & Safe)"
-    };
-    println!("  Mode: {mode}");
-    println!("  Items to remove: {}", paths.len());
-    println!(
-        "────────────────────────────────────────────────────────────────────────────────────────"
-    );
+    if !as_json {
+        println!();
+        println!(
+            "════════════════════════════════════════════════════════════════════════════════════════"
+        );
+        println!("  UNDRIFT CLEANUP REVIEW");
+        println!(
+            "════════════════════════════════════════════════════════════════════════════════════════"
+        );
+        let mode = if dry_run {
+            "SIMULATION (Dry-Run)"
+        } else if permanent {
+            "PERMANENT DELETION"
+        } else {
+            "Recycle Bin (Default & Safe)"
+        };
+        println!("  Mode: {mode}");
+        println!("  Items to remove: {}", paths.len());
+        println!(
+            "────────────────────────────────────────────────────────────────────────────────────────"
+        );
 
-    for (i, path) in paths.iter().enumerate() {
-        println!("  [{}] {}", i + 1, path.display());
-    }
-    println!(
-        "────────────────────────────────────────────────────────────────────────────────────────"
-    );
+        for (i, path) in paths.iter().enumerate() {
+            println!("  [{}] {}", i + 1, path.display());
+        }
+        println!(
+            "────────────────────────────────────────────────────────────────────────────────────────"
+        );
 
-    if !auto_confirm && !dry_run {
-        print!("  Proceed with cleanup? [y/N]: ");
-        io::stdout().flush()?;
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-        let trimmed = input.trim().to_lowercase();
-        if trimmed != "y" && trimmed != "yes" {
-            println!("  Operation cancelled by user.");
-            return Ok(());
+        if !auto_confirm && !dry_run {
+            print!("  Proceed with cleanup? [y/N]: ");
+            io::stdout().flush()?;
+            let mut input = String::new();
+            io::stdin().read_line(&mut input)?;
+            let trimmed = input.trim().to_lowercase();
+            if trimmed != "y" && trimmed != "yes" {
+                println!("  Operation cancelled by user.");
+                return Ok(());
+            }
         }
     }
 
@@ -221,18 +229,23 @@ fn run_clean(
 
     let report = CleanExecutor::clean_targets(&targets, permanent, dry_run);
 
-    println!();
-    println!(
-        "  Cleanup complete! Successfully reclaimed: {}",
-        report.human_total_reclaimed
-    );
-    if !report.failed.is_empty() {
-        println!("  Encountered {} failure(s):", report.failed.len());
-        for fail in &report.failed {
-            println!("    - {}: {}", fail.path.display(), fail.error_message);
+    if as_json {
+        let json_str = serde_json::to_string_pretty(&report)?;
+        println!("{json_str}");
+    } else {
+        println!();
+        println!(
+            "  Cleanup complete! Successfully reclaimed: {}",
+            report.human_total_reclaimed
+        );
+        if !report.failed.is_empty() {
+            println!("  Encountered {} failure(s):", report.failed.len());
+            for fail in &report.failed {
+                println!("    - {}: {}", fail.path.display(), fail.error_message);
+            }
         }
+        println!();
     }
-    println!();
 
     Ok(())
 }
