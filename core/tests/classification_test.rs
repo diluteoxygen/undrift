@@ -8,7 +8,7 @@ use undrift_core::scanner::dir_walk::DirWalkScanner;
 #[test]
 fn test_classify_node_modules_and_rust_target() {
     let temp_dir = TempDir::new().unwrap();
-    let root = temp_dir.path();
+    let root = temp_dir.path().canonicalize().unwrap();
 
     // Setup Node.js project: package.json + node_modules
     let node_dir = root.join("my-node-app");
@@ -44,7 +44,7 @@ fn test_classify_node_modules_and_rust_target() {
     write(py_dir.join(".venv").join("bin").join("python"), "dummy").unwrap();
 
     let scanner = DirWalkScanner::new();
-    let index = scanner.scan(root).unwrap();
+    let index = scanner.scan(&root).unwrap();
 
     let pipeline = ClassifierPipeline::new(0); // 0 minimum size for tests
     let candidates = pipeline.classify(&index);
@@ -65,7 +65,7 @@ fn test_classify_node_modules_and_rust_target() {
 #[test]
 fn test_nested_candidate_ancestor_dedup() {
     let temp_dir = TempDir::new().unwrap();
-    let root = temp_dir.path();
+    let root = temp_dir.path().canonicalize().unwrap();
 
     // Setup nested Node.js project:
     // root/app/package.json
@@ -82,7 +82,7 @@ fn test_nested_candidate_ancestor_dedup() {
     write(inner_nm.join("file.js"), "content").unwrap();
 
     let scanner = DirWalkScanner::new();
-    let index = scanner.scan(root).unwrap();
+    let index = scanner.scan(&root).unwrap();
 
     let pipeline = ClassifierPipeline::new(0);
     let candidates = pipeline.classify(&index);
