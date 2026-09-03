@@ -80,7 +80,7 @@ jobs:
         run: cargo build --release
 
       - name: Restore .NET packages
-        run: dotnet restore app/Undrift.App.sln
+        run: dotnet restore app/Sweepie.App.sln
 
       - name: Build WinUI 3 Application
-        run: dotnet build app/Undrift.App/Undrift.App.csproj --configuration Release --no-restore
+        run: dotnet build app/Sweepie.App/Sweepie.App.csproj --configuration Release --no-restore

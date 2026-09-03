@@ -1,11 +1,11 @@
 use std::fs::{create_dir_all, hard_link, write};
 use std::time::Instant;
-use tempfile::TempDir;
 use sweepie_core::classifier::ClassifierPipeline;
 use sweepie_core::safety::SafetyPipeline;
 use sweepie_core::scanner::VolumeScanner;
 use sweepie_core::scanner::dir_walk::DirWalkScanner;
 use sweepie_core::scanner::persistent_index::{PersistentIndex, UsnCheckpoint, UsnDeltaRecord};
+use tempfile::TempDir;
 
 fn main() {
     println!("\n═════════════════════════════════════════════════════════════════════════");
