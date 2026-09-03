@@ -66,21 +66,19 @@ impl VolumeScanner for NtfsMftScanner {
                 rec.attributes(|att| {
                     if att.header.type_id
                         == ntfs_reader::api::NtfsAttributeType::StandardInformation as u32
+                        && let Some(stdinfo) = att.as_standard_info()
                     {
-                        if let Some(stdinfo) = att.as_standard_info() {
-                            let c_time = ntfs_reader::api::ntfs_to_unix_time(stdinfo.creation_time);
-                            let m_time =
-                                ntfs_reader::api::ntfs_to_unix_time(stdinfo.modification_time);
-                            created_at = DateTime::<Utc>::from_timestamp(
-                                c_time.unix_timestamp(),
-                                c_time.nanosecond(),
-                            );
-                            modified_at = DateTime::<Utc>::from_timestamp(
-                                m_time.unix_timestamp(),
-                                m_time.nanosecond(),
-                            );
-                            attributes = stdinfo.file_attributes;
-                        }
+                        let c_time = ntfs_reader::api::ntfs_to_unix_time(stdinfo.creation_time);
+                        let m_time = ntfs_reader::api::ntfs_to_unix_time(stdinfo.modification_time);
+                        created_at = DateTime::<Utc>::from_timestamp(
+                            c_time.unix_timestamp(),
+                            c_time.nanosecond(),
+                        );
+                        modified_at = DateTime::<Utc>::from_timestamp(
+                            m_time.unix_timestamp(),
+                            m_time.nanosecond(),
+                        );
+                        attributes = stdinfo.file_attributes;
                     }
 
                     if att.header.type_id == ntfs_reader::api::NtfsAttributeType::Data as u32
@@ -90,10 +88,10 @@ impl VolumeScanner for NtfsMftScanner {
                             if let Some(header) = att.resident_header() {
                                 size_bytes = header.value_length as u64;
                             }
-                        } else if let Some(header) = att.nonresident_header() {
-                            if header.lowest_vcn == 0 {
-                                size_bytes = header.data_size;
-                            }
+                        } else if let Some(header) = att.nonresident_header()
+                            && header.lowest_vcn == 0
+                        {
+                            size_bytes = header.data_size;
                         }
                     }
                 });
