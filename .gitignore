@@ -24,3 +24,14 @@ desktop.ini
 # Logs and scratch
 *.log
 scratch/
+
+# Sensitive credentials & secrets (NEVER COMMIT)
+github.json
+*.json.secret
+*.token
+*.key
+*.pem
+*.pfx
+.env
+.env.*
+credentials.json
