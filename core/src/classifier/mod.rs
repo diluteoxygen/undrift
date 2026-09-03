@@ -4,6 +4,9 @@ use crate::model::candidate::GitRepoStatus;
 use crate::model::candidate::ReclaimCandidate;
 use crate::scanner::ScanIndex;
 use rules::ClassificationRule;
+use rules::app_cache::AppCacheRule;
+use rules::browser_cache::BrowserCacheRule;
+use rules::consumer::{GameCacheRule, TempFilesRule};
 use rules::dotnet_java::DotnetJavaRule;
 use rules::downloads::DownloadsRule;
 use rules::ide::IdeRule;
@@ -28,14 +31,20 @@ impl Default for ClassifierPipeline {
 impl ClassifierPipeline {
     pub fn new(min_size_bytes: u64) -> Self {
         let rules: Vec<Box<dyn ClassificationRule>> = vec![
+            // Consumer-first rules (highest relevance for everyday users)
+            Box::new(DownloadsRule::default()),
+            Box::new(WindowsUpdateRule),
+            Box::new(BrowserCacheRule),
+            Box::new(AppCacheRule),
+            Box::new(TempFilesRule),
+            Box::new(GameCacheRule),
+            // Developer / power user rules
             Box::new(NodeRule),
             Box::new(RustRule),
             Box::new(PythonRule),
             Box::new(DotnetJavaRule),
             Box::new(IdeRule),
             Box::new(UnityRule),
-            Box::new(DownloadsRule::default()),
-            Box::new(WindowsUpdateRule),
         ];
 
         Self {
@@ -43,6 +52,7 @@ impl ClassifierPipeline {
             min_size_bytes,
         }
     }
+
 
     pub fn with_stale_days(mut self, stale_days: i64) -> Self {
         // Update downloads rule

@@ -8,8 +8,10 @@ public static class Converters
 {
     public static Visibility BoolToVisibility(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
     public static Visibility InverseBoolToVisibility(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
-    public static string ScanButtonText(bool isScanning) => isScanning ? "Scanning MFT..." : "Scan MFT";
+    public static string ScanButtonText(bool isScanning) => isScanning ? "Scanning..." : "Scan My PC";
+    public static string CleanButtonText(bool isCleaning) => isCleaning ? "Cleaning up..." : "Clean Up";
 }
+
 
 public class ScanButtonTextConverter : IValueConverter
 {

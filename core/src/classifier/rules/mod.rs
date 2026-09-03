@@ -1,3 +1,6 @@
+pub mod app_cache;
+pub mod browser_cache;
+pub mod consumer;
 pub mod dotnet_java;
 pub mod downloads;
 pub mod ide;
@@ -6,6 +9,7 @@ pub mod python;
 pub mod rust;
 pub mod unity;
 pub mod windows_update;
+
 
 use crate::model::category::ArtifactCategory;
 use crate::model::file_record::FileRecord;

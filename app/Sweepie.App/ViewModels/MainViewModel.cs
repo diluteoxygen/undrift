@@ -24,7 +24,7 @@ public partial class MainViewModel : ObservableObject
     private bool _isCleaning;
 
     [ObservableProperty]
-    private string _statusMessage = "Ready to scan.";
+    private string _statusMessage = "Ready to find extra space on your PC.";
 
     [ObservableProperty]
     private string _totalReclaimableDisplay = "0 B";
@@ -33,7 +33,7 @@ public partial class MainViewModel : ObservableObject
     private string _selectedReclaimableDisplay = "0 B";
 
     [ObservableProperty]
-    private string _scanTimeDisplay = "0.00s";
+    private string _scanTimeDisplay = "";
 
     [ObservableProperty]
     private int _filesAnalyzedCount;
@@ -55,15 +55,27 @@ public partial class MainViewModel : ObservableObject
 
     public Func<List<CandidateViewModel>, Task<bool>>? ConfirmCleanCallback { get; set; }
 
+    /// Filter categories matching the new friendly display names
     public ObservableCollection<string> AvailableCategories { get; } =
     [
         "All",
-        "Node.js Dependencies",
-        "Rust Build Output",
-        "Python Virtualenv",
-        "Visual Studio Artifacts",
-        "JetBrains Cache",
-        "Stale Installer",
+        "Old Setup Files",
+        "Windows Update Leftovers",
+        "Web Browser Cache",
+        "App Junk & Offline Cache",
+        "Temporary Files",
+        "Game Launcher Cache",
+        "Crash Reports & Logs",
+        "Node.js Project Files",
+        "Rust Build Files",
+        "Python Project Environment",
+        "Python Cache",
+        "Java/Android Build Cache",
+        "Java Package Cache",
+        ".NET Package Cache",
+        "Visual Studio Build Files",
+        "JetBrains IDE Cache",
+        "Unity Game Build Cache",
     ];
 
     public ObservableCollection<CandidateViewModel> AllCandidates { get; } = [];
@@ -72,6 +84,18 @@ public partial class MainViewModel : ObservableObject
     public bool HasResults => FilteredCandidates.Count > 0;
     public bool IsEmptyResults => FilteredCandidates.Count == 0;
 
+    /// True when a scan has run and found items
+    public bool HasResultsAfterScan => HasScanned && HasResults;
+
+    /// True when scanning is still in progress (for capybara animation state)
+    public bool IsIdle => !IsScanning && !IsCleaning;
+
+    /// Friendly sub-line for the hero card
+    public string HeroSubtitle => HasScanned
+        ? (HasResults
+            ? $"Found {FilteredCandidates.Count} group{(FilteredCandidates.Count == 1 ? "" : "s")} of stuff you can clean"
+            : "Your PC looks clean! 🎉")
+        : "Sweepie checks for leftovers, junk, and old files — your photos and documents are always safe";
 
     public MainViewModel()
     {
@@ -89,16 +113,19 @@ public partial class MainViewModel : ObservableObject
         if (IsScanning || IsCleaning) return;
 
         IsScanning = true;
-        StatusMessage = $"Scanning {TargetPath}...";
+        HasScanned = false;
+        StatusMessage = $"Looking through {TargetPath}...";
         AllCandidates.Clear();
         FilteredCandidates.Clear();
         FilesAnalyzedCount = 0;
         TotalReclaimableDisplay = "0 B";
+        OnPropertyChanged(nameof(IsIdle));
+        OnPropertyChanged(nameof(HeroSubtitle));
 
         var progress = new Progress<ScanProgressEvent>(p =>
         {
             FilesAnalyzedCount = p.FilesScanned;
-            StatusMessage = $"Scanning Master File Table... {p.FilesScanned:N0} records analyzed";
+            StatusMessage = $"Scanning... {p.FilesScanned:N0} files checked";
         });
 
         Action<CandidateItem> onCandidateFound = candidate =>
@@ -116,6 +143,7 @@ public partial class MainViewModel : ObservableObject
                 AllCandidates.Add(vm);
                 ApplyFilter();
                 UpdateSelectedMetrics();
+                OnPropertyChanged(nameof(HeroSubtitle));
             }
 
             DispatcherQueue? dispatcher = DispatcherQueue.GetForCurrentThread();
@@ -141,24 +169,30 @@ public partial class MainViewModel : ObservableObject
                 onCandidateFound: onCandidateFound);
 
             FilesAnalyzedCount = result.TotalFilesScanned;
-            ScanTimeDisplay = $"{result.ScanTimeMs / 1000.0:F2}s";
+            ScanTimeDisplay = $"{result.ScanTimeMs / 1000.0:F1}s";
             TotalReclaimableDisplay = result.HumanTotalReclaimable;
 
             ApplyFilter();
             UpdateSelectedMetrics();
 
-            StatusMessage = $"Scan completed in {ScanTimeDisplay}. Discovered {result.Candidates.Count} artifact groups.";
+            int count = result.Candidates.Count;
+            StatusMessage = count > 0
+                ? $"Done! Found {count} group{(count == 1 ? "" : "s")} in {ScanTimeDisplay} — {result.HumanTotalReclaimable} can be freed"
+                : $"All clean! No junk found in {ScanTimeDisplay}.";
         }
         catch (Exception ex)
         {
             HasError = true;
-            ErrorMessage = $"Scan error: {ex.Message}";
-            StatusMessage = $"Scan error: {ex.Message}";
+            ErrorMessage = $"Something went wrong: {ex.Message}";
+            StatusMessage = "Scan couldn't complete. Please try again.";
         }
         finally
         {
             IsScanning = false;
             HasScanned = true;
+            OnPropertyChanged(nameof(IsIdle));
+            OnPropertyChanged(nameof(HeroSubtitle));
+            OnPropertyChanged(nameof(HasResultsAfterScan));
         }
     }
 
@@ -188,13 +222,12 @@ public partial class MainViewModel : ObservableObject
         var selected = AllCandidates.Where(c => c.IsSelected).ToList();
         if (selected.Count == 0 || IsCleaning) return;
 
-        // Prompt user confirmation dialog with explicit target list and recycle bin setting
         if (ConfirmCleanCallback != null)
         {
             bool proceed = await ConfirmCleanCallback(selected);
             if (!proceed)
             {
-                StatusMessage = "Cleanup cancelled by user.";
+                StatusMessage = "Nothing was deleted — your files are safe.";
                 return;
             }
         }
@@ -202,7 +235,8 @@ public partial class MainViewModel : ObservableObject
         IsCleaning = true;
         HasError = false;
         ErrorMessage = string.Empty;
-        StatusMessage = $"Reclaiming space ({selected.Count} items)...";
+        StatusMessage = $"Cleaning up {selected.Count} item{(selected.Count == 1 ? "" : "s")}...";
+        OnPropertyChanged(nameof(IsIdle));
 
         try
         {
@@ -219,7 +253,6 @@ public partial class MainViewModel : ObservableObject
 
             CleanReport report = await _bridge.CleanAsync(request);
 
-            // Remove succeeded candidates
             var succeededPaths = new HashSet<string>(report.Succeeded.Select(s => s.Path));
             var toRemove = AllCandidates.Where(c => succeededPaths.Contains(c.Path)).ToList();
             foreach (var r in toRemove)
@@ -229,27 +262,30 @@ public partial class MainViewModel : ObservableObject
 
             ApplyFilter();
             UpdateSelectedMetrics();
+            OnPropertyChanged(nameof(HeroSubtitle));
 
             if (report.Failed != null && report.Failed.Count > 0)
             {
                 HasError = true;
-                ErrorMessage = $"{report.Failed.Count} item(s) could not be cleaned (e.g. {report.Failed.First().ErrorMessage}).";
-                StatusMessage = $"Reclaimed {report.HumanTotalReclaimed}! {toRemove.Count} item(s) cleaned, but {report.Failed.Count} item(s) failed.";
+                ErrorMessage = $"{report.Failed.Count} item(s) couldn't be cleaned. They may be in use by another app.";
+                StatusMessage = $"Freed {report.HumanTotalReclaimed}! {toRemove.Count} cleaned, {report.Failed.Count} skipped.";
             }
             else
             {
-                StatusMessage = $"Reclaimed {report.HumanTotalReclaimed}! {toRemove.Count} item(s) moved to {(UseRecycleBin ? "Recycle Bin" : "Permanently Deleted")}.";
+                string destination = UseRecycleBin ? "Recycle Bin" : "permanently deleted";
+                StatusMessage = $"🎉 Freed {report.HumanTotalReclaimed}! {toRemove.Count} item{(toRemove.Count == 1 ? "" : "s")} sent to {destination}.";
             }
         }
         catch (Exception ex)
         {
             HasError = true;
-            ErrorMessage = $"Cleanup error: {ex.Message}";
-            StatusMessage = $"Cleanup error: {ex.Message}";
+            ErrorMessage = $"Cleanup ran into a problem: {ex.Message}";
+            StatusMessage = "Couldn't finish cleaning. Please try again.";
         }
         finally
         {
             IsCleaning = false;
+            OnPropertyChanged(nameof(IsIdle));
         }
     }
 
@@ -265,6 +301,8 @@ public partial class MainViewModel : ObservableObject
         }
         OnPropertyChanged(nameof(HasResults));
         OnPropertyChanged(nameof(IsEmptyResults));
+        OnPropertyChanged(nameof(HasResultsAfterScan));
+        OnPropertyChanged(nameof(HeroSubtitle));
     }
 
     private void UpdateSelectedMetrics()
