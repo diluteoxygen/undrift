@@ -17,8 +17,6 @@
         <local:ScanButtonTextConverter x:Key="ScanButtonTextConverter" />
         <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" />
-        <local:HasResultsVisibilityConverter x:Key="HasResultsVisibilityConverter" />
-        <local:EmptyResultsVisibilityConverter x:Key="EmptyResultsVisibilityConverter" />
     </Window.Resources>
 
     <Grid Margin="28,16,28,20" RowSpacing="14">
@@ -153,7 +151,7 @@
                 <!-- Active Results ListView -->
                 <ListView ItemsSource="{x:Bind ViewModel.FilteredCandidates, Mode=OneWay}"
                           SelectionMode="None"
-                          Visibility="{x:Bind ViewModel.FilteredCandidates.Count, Mode=OneWay, Converter={StaticResource HasResultsVisibilityConverter}}">
+                          Visibility="{x:Bind ViewModel.HasResults, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:CandidateViewModel">
                             <Grid Padding="14,10" ColumnSpacing="16" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
@@ -230,7 +228,7 @@
                 </ListView>
 
                 <!-- Empty State Container -->
-                <Grid Visibility="{x:Bind ViewModel.FilteredCandidates.Count, Mode=OneWay, Converter={StaticResource EmptyResultsVisibilityConverter}}"
+                <Grid Visibility="{x:Bind ViewModel.IsEmptyResults, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center"
                       Margin="24">

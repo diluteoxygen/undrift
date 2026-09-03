@@ -68,6 +68,10 @@ public partial class MainViewModel : ObservableObject
     public ObservableCollection<CandidateViewModel> AllCandidates { get; } = [];
     public ObservableCollection<CandidateViewModel> FilteredCandidates { get; } = [];
 
+    public bool HasResults => FilteredCandidates.Count > 0;
+    public bool IsEmptyResults => FilteredCandidates.Count == 0;
+
+
     public MainViewModel()
     {
         _bridge = new CoreCliBridge();
@@ -257,6 +261,8 @@ public partial class MainViewModel : ObservableObject
                 FilteredCandidates.Add(c);
             }
         }
+        OnPropertyChanged(nameof(HasResults));
+        OnPropertyChanged(nameof(IsEmptyResults));
     }
 
     private void UpdateSelectedMetrics()
