@@ -4,6 +4,13 @@ using System;
 
 namespace Sweepie.App;
 
+public static class Converters
+{
+    public static Visibility BoolToVisibility(bool value) => value ? Visibility.Visible : Visibility.Collapsed;
+    public static Visibility InverseBoolToVisibility(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
+    public static string ScanButtonText(bool isScanning) => isScanning ? "Scanning MFT..." : "Scan MFT";
+}
+
 public class ScanButtonTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)

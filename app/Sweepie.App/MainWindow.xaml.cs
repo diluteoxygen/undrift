@@ -19,9 +19,6 @@ public sealed partial class MainWindow : Window
     {
         ViewModel = new MainViewModel();
         this.InitializeComponent();
-
-        Title = "Sweepie — Space Reclaiming for Developers";
-        AppWindow.SetIcon("Assets\\AppIcon.ico");
         ViewModel.ConfirmCleanCallback = ShowCleanConfirmationDialogAsync;
     }
 

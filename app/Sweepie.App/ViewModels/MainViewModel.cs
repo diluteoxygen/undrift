@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI.Dispatching;
 using Sweepie.App.CoreInterop;
 
 namespace Sweepie.App.ViewModels;
@@ -117,9 +118,10 @@ public partial class MainViewModel : ObservableObject
                 UpdateSelectedMetrics();
             }
 
-            if (App.Current?.DispatcherQueue != null)
+            DispatcherQueue? dispatcher = DispatcherQueue.GetForCurrentThread();
+            if (dispatcher != null)
             {
-                App.Current.DispatcherQueue.TryEnqueue(AddCandidate);
+                dispatcher.TryEnqueue(AddCandidate);
             }
             else
             {

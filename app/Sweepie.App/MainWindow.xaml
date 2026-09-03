@@ -9,17 +9,7 @@
     mc:Ignorable="d"
     Title="Sweepie — Space Reclaiming for Developers">
 
-    <Window.SystemBackdrop>
-        <MicaBackdrop Kind="Base" />
-    </Window.SystemBackdrop>
-
-    <Window.Resources>
-        <local:ScanButtonTextConverter x:Key="ScanButtonTextConverter" />
-        <local:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        <local:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter" />
-    </Window.Resources>
-
-    <Grid Margin="28,16,28,20" RowSpacing="14">
+    <Grid Margin="28,16,28,20" RowSpacing="14" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.RowDefinitions>
             <!-- Error / Warning InfoBar -->
             <RowDefinition Height="Auto" />
@@ -79,8 +69,8 @@
                     Style="{ThemeResource AccentButtonStyle}" Height="38" Padding="20,0">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <ProgressRing IsActive="{x:Bind ViewModel.IsScanning, Mode=OneWay}" Width="16" Height="16" 
-                                  Visibility="{x:Bind ViewModel.IsScanning, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
-                    <TextBlock Text="{x:Bind ViewModel.IsScanning, Mode=OneWay, Converter={StaticResource ScanButtonTextConverter}}" 
+                                  Visibility="{x:Bind local:Converters.BoolToVisibility(ViewModel.IsScanning), Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind local:Converters.ScanButtonText(ViewModel.IsScanning), Mode=OneWay}" 
                                VerticalAlignment="Center" FontWeight="SemiBold" />
                 </StackPanel>
             </Button>
@@ -151,7 +141,7 @@
                 <!-- Active Results ListView -->
                 <ListView ItemsSource="{x:Bind ViewModel.FilteredCandidates, Mode=OneWay}"
                           SelectionMode="None"
-                          Visibility="{x:Bind ViewModel.HasResults, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                          Visibility="{x:Bind local:Converters.BoolToVisibility(ViewModel.HasResults), Mode=OneWay}">
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:CandidateViewModel">
                             <Grid Padding="14,10" ColumnSpacing="16" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
@@ -191,7 +181,7 @@
 
                                 <!-- Hardlink Caveat Badge (pnpm store, etc.) -->
                                 <Border Grid.Column="3"
-                                        Visibility="{x:Bind HasHardlinks, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                        Visibility="{x:Bind local:Converters.BoolToVisibility(HasHardlinks), Mode=OneWay}"
                                         Background="#180078D4"
                                         BorderBrush="#400078D4"
                                         BorderThickness="1"
@@ -228,14 +218,14 @@
                 </ListView>
 
                 <!-- Empty State Container -->
-                <Grid Visibility="{x:Bind ViewModel.IsEmptyResults, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                <Grid Visibility="{x:Bind local:Converters.BoolToVisibility(ViewModel.IsEmptyResults), Mode=OneWay}"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center"
                       Margin="24">
 
                     <!-- 1. Initial State (before scan) -->
                     <StackPanel Spacing="10" HorizontalAlignment="Center"
-                                Visibility="{x:Bind ViewModel.HasScanned, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                Visibility="{x:Bind local:Converters.InverseBoolToVisibility(ViewModel.HasScanned), Mode=OneWay}">
                         <Image Source="ms-appx:///Assets/capybara_nobackground.png" Width="96" Height="96" HorizontalAlignment="Center" Stretch="Uniform" />
                         <TextBlock Text="Ready to scan for reclaimable space" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         <TextBlock Text="Enter a drive letter (e.g. C:) or project path above and click 'Scan MFT' to discover disposable dependencies (node_modules, target, .venv), build artifacts, and stale installers."
@@ -244,7 +234,7 @@
 
                     <!-- 2. Zero-Results State (after scan) -->
                     <StackPanel Spacing="10" HorizontalAlignment="Center"
-                                Visibility="{x:Bind ViewModel.HasScanned, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                Visibility="{x:Bind local:Converters.BoolToVisibility(ViewModel.HasScanned), Mode=OneWay}">
                         <Image Source="ms-appx:///Assets/capybara_nobackground.png" Width="96" Height="96" HorizontalAlignment="Center" Stretch="Uniform" Opacity="0.8" />
                         <TextBlock Text="No reclaimable artifacts found" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         <TextBlock Text="Your drive or project directory is already clean. No disposable build caches or dead dependencies were detected."
@@ -272,7 +262,7 @@
                     Style="{ThemeResource AccentButtonStyle}" Height="40" Padding="24,0">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <ProgressRing IsActive="{x:Bind ViewModel.IsCleaning, Mode=OneWay}" Width="16" Height="16" 
-                                  Visibility="{x:Bind ViewModel.IsCleaning, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                  Visibility="{x:Bind local:Converters.BoolToVisibility(ViewModel.IsCleaning), Mode=OneWay}" />
                     <TextBlock Text="Reclaim Selected Space" FontWeight="SemiBold" VerticalAlignment="Center" />
                 </StackPanel>
             </Button>

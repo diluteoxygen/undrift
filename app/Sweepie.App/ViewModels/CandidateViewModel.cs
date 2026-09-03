@@ -65,9 +65,14 @@ public partial class CandidateViewModel : ObservableObject
         _ => "\uE8B7", // Default
     };
 
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush SafeBg = new(Windows.UI.Color.FromArgb(0x1F, 0x10, 0x7C, 0x41));
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush UnsafeBg = new(Windows.UI.Color.FromArgb(0x1F, 0xD8, 0x3B, 0x01));
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush SafeFg = new(Windows.UI.Color.FromArgb(0xFF, 0x10, 0x7C, 0x41));
+    private static readonly Microsoft.UI.Xaml.Media.SolidColorBrush UnsafeFg = new(Windows.UI.Color.FromArgb(0xFF, 0xD8, 0x3B, 0x01));
+
     public string SafetyBadgeText => IsSafe ? "Safe to Reclaim" : "Review / Skipped";
-    public string SafetyBadgeBackground => IsSafe ? "#1F107C41" : "#1FD83B01";
-    public string SafetyBadgeForeground => IsSafe ? "#107C41" : "#D83B01";
+    public Microsoft.UI.Xaml.Media.Brush SafetyBadgeBackground => IsSafe ? SafeBg : UnsafeBg;
+    public Microsoft.UI.Xaml.Media.Brush SafetyBadgeForeground => IsSafe ? SafeFg : UnsafeFg;
 
     public bool HasHardlinks => Model.HasHardlinks;
     public string? SizeCaveat => Model.SizeCaveat;

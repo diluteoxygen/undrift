@@ -12,7 +12,9 @@
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>false</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
-    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
+    <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
+    <EnableCoreMrtTooling>false</EnableCoreMrtTooling>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>12.0</LangVersion>
@@ -42,4 +44,13 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <!-- Automatically generate resources.pri for unpackaged execution when building via dotnet CLI -->
+  <Target Name="GeneratePriFile" AfterTargets="Build" Condition="!Exists('$(TargetDir)resources.pri')">
+    <PropertyGroup>
+      <_MakePriExe>$(UserProfile)\.nuget\packages\microsoft.windows.sdk.buildtools\10.0.26100.1742\bin\10.0.26100.0\x64\makepri.exe</_MakePriExe>
+    </PropertyGroup>
+    <Exec Command="&quot;$(_MakePriExe)&quot; createconfig /cf &quot;$(IntermediateOutputPath)priconfig.xml&quot; /dq en-US /o" Condition="Exists('$(_MakePriExe)')" />
+    <Exec Command="&quot;$(_MakePriExe)&quot; new /pr &quot;$(IntermediateOutputPath.TrimEnd('\'))&quot; /cf &quot;$(IntermediateOutputPath)priconfig.xml&quot; /of &quot;$(TargetDir)resources.pri&quot; /in Sweepie.App /o" Condition="Exists('$(_MakePriExe)')" />
+  </Target>
 </Project>
