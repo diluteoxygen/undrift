@@ -49,7 +49,12 @@ public sealed class CoreCliBridge
         return exeName;
     }
 
-    public async Task<ScanResult> ScanAsync(string targetPath, bool includeAll = true, CancellationToken ct = default)
+    public async Task<ScanResult> ScanAsync(
+        string targetPath,
+        bool includeAll = true,
+        IProgress<ScanProgressEvent>? progress = null,
+        Action<CandidateItem>? onCandidateFound = null,
+        CancellationToken ct = default)
     {
         string arguments = $"scan \"{targetPath}\" --json" + (includeAll ? " --all" : "");
 
@@ -68,12 +73,57 @@ public sealed class CoreCliBridge
         using Process process = new() { StartInfo = psi };
         process.Start();
 
-        Task<string> outputTask = process.StandardOutput.ReadToEndAsync(ct);
+        ScanResult? finalSummary = null;
+        List<CandidateItem> collectedCandidates = [];
+
         Task<string> errorTask = process.StandardError.ReadToEndAsync(ct);
 
-        await process.WaitForExitAsync(ct);
+        while (await process.StandardOutput.ReadLineAsync(ct) is { } line)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
 
-        string output = await outputTask;
+            try
+            {
+                using var doc = JsonDocument.Parse(line);
+                if (doc.RootElement.TryGetProperty("type", out var typeProp))
+                {
+                    string? eventType = typeProp.GetString();
+                    switch (eventType)
+                    {
+                        case "progress":
+                            var progEvt = JsonSerializer.Deserialize<ScanProgressEvent>(line, JsonOptions);
+                            if (progEvt != null)
+                            {
+                                progress?.Report(progEvt);
+                            }
+                            break;
+
+                        case "candidate":
+                            var candEvt = JsonSerializer.Deserialize<ScanCandidateEvent>(line, JsonOptions);
+                            if (candEvt?.Candidate != null)
+                            {
+                                collectedCandidates.Add(candEvt.Candidate);
+                                onCandidateFound?.Invoke(candEvt.Candidate);
+                            }
+                            break;
+
+                        case "done":
+                            var doneEvt = JsonSerializer.Deserialize<ScanDoneEvent>(line, JsonOptions);
+                            if (doneEvt?.Summary != null)
+                            {
+                                finalSummary = doneEvt.Summary;
+                            }
+                            break;
+                    }
+                }
+            }
+            catch (JsonException)
+            {
+                // Skip malformed lines or non-JSON logs
+            }
+        }
+
+        await process.WaitForExitAsync(ct);
         string error = await errorTask;
 
         if (process.ExitCode != 0)
@@ -81,8 +131,16 @@ public sealed class CoreCliBridge
             throw new InvalidOperationException($"Core scan failed (exit code {process.ExitCode}): {error}");
         }
 
-        return JsonSerializer.Deserialize<ScanResult>(output, JsonOptions)
-            ?? throw new InvalidOperationException("Failed to deserialize scan result JSON");
+        if (finalSummary != null)
+        {
+            return finalSummary;
+        }
+
+        return new ScanResult
+        {
+            Candidates = collectedCandidates,
+            TotalFilesScanned = collectedCandidates.Count,
+        };
     }
 
     public async Task<CleanReport> CleanAsync(CleanRequest request, CancellationToken ct = default)

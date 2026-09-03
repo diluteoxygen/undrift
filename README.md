@@ -89,7 +89,7 @@ undrift scan C:
 # Include skipped / unsafe items with reasons
 undrift scan C: --all
 
-# Output structured JSON for automation or GUI
+# Output progressive NDJSON stream events for real-time UI/automation
 undrift scan C: --json
 
 # Filter by minimum size (e.g. 50 MB)

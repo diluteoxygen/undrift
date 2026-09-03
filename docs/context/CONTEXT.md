@@ -48,7 +48,13 @@ graph TD
 - **Hiding**: Hides `git2` discovery, status mask evaluation, Windows `FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS` bit checking, and file lock probes.
 
 ### Seam 4: Interop Seam (`core/src/ffi.rs` & `app/CoreInterop/`)
-- **Interface**: JSON-over-stdio CLI (`undrift scan --json`) and C-ABI P/Invoke exports (`undrift_scan_path`, `undrift_clean_json`).
+- **Interface**:
+  - **Progressive NDJSON Streaming (`undrift scan <path> --json`)**: Emits newline-delimited JSON stream events directly to standard output:
+    - `{"type": "progress", "files_scanned": N, "elapsed_ms": M}` emitted during volume ingestion.
+    - `{"type": "candidate", "candidate": {...}}` emitted live as each reclaim candidate is classified and safety-evaluated.
+    - `{"type": "done", "summary": {...}}` emitted upon completion with aggregate metrics.
+  - **Subprocess Clean Reporting (`undrift clean <paths> --json --yes`)**: Executes actual deletions with immediate safety re-checks and serializes the real `CleanReport` to stdout.
+  - **C-ABI Exports (`core/src/ffi.rs`)**: P/Invoke exports (`undrift_scan_path`, `undrift_clean_json`, `undrift_version`, `undrift_free_string`) for in-process interop.
 - **Hiding**: Completely decouples the C# WinUI 3 process from Rust internal memory structures.
 
 ## 3. Performance Architecture & Benchmarks

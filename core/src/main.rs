@@ -5,7 +5,7 @@ use std::time::Instant;
 use undrift_core::classifier::ClassifierPipeline;
 use undrift_core::cleaner::CleanExecutor;
 use undrift_core::cleaner::history::HistoryManager;
-use undrift_core::output::{ScanResultJson, print_human_table};
+use undrift_core::output::{ScanResultJson, ScanStreamEvent, print_human_table};
 use undrift_core::safety::SafetyPipeline;
 use undrift_core::scanner::VolumeScanner;
 use undrift_core::scanner::dir_walk::DirWalkScanner;
@@ -152,8 +152,27 @@ fn run_scan(
     let result = ScanResultJson::new(candidates, index.total_files_scanned, start_total.elapsed());
 
     if as_json {
-        let json_str = serde_json::to_string_pretty(&result)?;
-        println!("{json_str}");
+        // 1. Progress event with ingestion metrics
+        let prog = ScanStreamEvent::Progress {
+            files_scanned: index.total_files_scanned,
+            elapsed_ms: start_total.elapsed().as_millis(),
+        };
+        println!("{}", serde_json::to_string(&prog)?);
+
+        // 2. Stream individual candidates progressively
+        for candidate in &result.candidates {
+            if !show_all && !candidate.is_safe {
+                continue;
+            }
+            let cand_evt = ScanStreamEvent::Candidate {
+                candidate: candidate.clone(),
+            };
+            println!("{}", serde_json::to_string(&cand_evt)?);
+        }
+
+        // 3. Final summary event
+        let done_evt = ScanStreamEvent::Done { summary: result };
+        println!("{}", serde_json::to_string(&done_evt)?);
     } else {
         print_human_table(&result, show_all);
     }

@@ -44,6 +44,20 @@ impl ScanResultJson {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ScanStreamEvent {
+    #[serde(rename = "progress")]
+    Progress {
+        files_scanned: usize,
+        elapsed_ms: u128,
+    },
+    #[serde(rename = "candidate")]
+    Candidate { candidate: ReclaimCandidate },
+    #[serde(rename = "done")]
+    Done { summary: ScanResultJson },
+}
+
 pub fn print_human_table(result: &ScanResultJson, show_all: bool) {
     println!();
     println!(

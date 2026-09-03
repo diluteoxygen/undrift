@@ -138,3 +138,33 @@ public sealed record CleanFailureItem
     [JsonPropertyName("error_message")]
     public string ErrorMessage { get; init; } = string.Empty;
 }
+
+public sealed record ScanProgressEvent
+{
+    [JsonPropertyName("type")]
+    public string Type { get; init; } = "progress";
+
+    [JsonPropertyName("files_scanned")]
+    public int FilesScanned { get; init; }
+
+    [JsonPropertyName("elapsed_ms")]
+    public ulong ElapsedMs { get; init; }
+}
+
+public sealed record ScanCandidateEvent
+{
+    [JsonPropertyName("type")]
+    public string Type { get; init; } = "candidate";
+
+    [JsonPropertyName("candidate")]
+    public CandidateItem Candidate { get; init; } = default!;
+}
+
+public sealed record ScanDoneEvent
+{
+    [JsonPropertyName("type")]
+    public string Type { get; init; } = "done";
+
+    [JsonPropertyName("summary")]
+    public ScanResult Summary { get; init; } = default!;
+}

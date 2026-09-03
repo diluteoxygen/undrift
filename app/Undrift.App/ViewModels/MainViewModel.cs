@@ -73,14 +73,21 @@ public partial class MainViewModel : ObservableObject
         if (IsScanning || IsCleaning) return;
 
         IsScanning = true;
-        StatusMessage = $"Scanning Master File Table on {TargetPath}...";
+        StatusMessage = $"Scanning {TargetPath}...";
+        AllCandidates.Clear();
+        FilteredCandidates.Clear();
+        FilesAnalyzedCount = 0;
+        TotalReclaimableDisplay = "0 B";
 
-        try
+        var progress = new Progress<ScanProgressEvent>(p =>
         {
-            ScanResult result = await _bridge.ScanAsync(TargetPath, includeAll: true);
+            FilesAnalyzedCount = p.FilesScanned;
+            StatusMessage = $"Scanning Master File Table... {p.FilesScanned:N0} records analyzed";
+        });
 
-            AllCandidates.Clear();
-            foreach (CandidateItem candidate in result.Candidates)
+        Action<CandidateItem> onCandidateFound = candidate =>
+        {
+            void AddCandidate()
             {
                 var vm = new CandidateViewModel(candidate);
                 vm.PropertyChanged += (_, e) =>
@@ -91,7 +98,27 @@ public partial class MainViewModel : ObservableObject
                     }
                 };
                 AllCandidates.Add(vm);
+                ApplyFilter();
+                UpdateSelectedMetrics();
             }
+
+            if (App.Current?.DispatcherQueue != null)
+            {
+                App.Current.DispatcherQueue.TryEnqueue(AddCandidate);
+            }
+            else
+            {
+                AddCandidate();
+            }
+        };
+
+        try
+        {
+            ScanResult result = await _bridge.ScanAsync(
+                TargetPath,
+                includeAll: true,
+                progress: progress,
+                onCandidateFound: onCandidateFound);
 
             FilesAnalyzedCount = result.TotalFilesScanned;
             ScanTimeDisplay = $"{result.ScanTimeMs / 1000.0:F2}s";
