@@ -13,7 +13,6 @@ use rules::rust::RustRule;
 use rules::unity::UnityRule;
 use rules::windows_update::WindowsUpdateRule;
 use std::collections::HashSet;
-use std::path::PathBuf;
 
 pub struct ClassifierPipeline {
     rules: Vec<Box<dyn ClassificationRule>>,
@@ -60,18 +59,52 @@ impl ClassifierPipeline {
     /// Evaluates all records in the index and returns discovered candidates
     pub fn classify(&self, index: &ScanIndex) -> Vec<ReclaimCandidate> {
         let mut candidates = Vec::new();
-        let mut seen_paths: HashSet<PathBuf> = HashSet::new();
+        let mut candidate_ids: HashSet<u64> = HashSet::new();
 
-        // Sort records by depth / path length so parent candidates are discovered first
+        // Sort records by depth from root so parent candidates are discovered first
         let mut sorted_records: Vec<_> = index.records.values().collect();
-        sorted_records.sort_by_key(|r| r.path.components().count());
+        sorted_records.sort_by_key(|r| {
+            if !r.path.as_os_str().is_empty() {
+                r.path.components().count()
+            } else {
+                let mut depth = 0usize;
+                let mut curr = r.parent_id;
+                while curr != 0 && curr != 5 && depth < 64 {
+                    depth += 1;
+                    match index.get_record(curr) {
+                        Some(parent) => {
+                            if parent.parent_id == curr {
+                                break;
+                            }
+                            curr = parent.parent_id;
+                        }
+                        None => break,
+                    }
+                }
+                depth
+            }
+        });
 
         for record in sorted_records {
-            // If an ancestor of this path has already been matched as a candidate, skip child
-            let has_ancestor = seen_paths
-                .iter()
-                .any(|parent| record.path.starts_with(parent));
-            if has_ancestor {
+            // Ancestor check: climb parent chain to verify no ancestor is already an accepted candidate
+            let mut is_dominated = false;
+            let mut curr = record.parent_id;
+            while curr != 0 && curr != 5 {
+                if candidate_ids.contains(&curr) {
+                    is_dominated = true;
+                    break;
+                }
+                match index.get_record(curr) {
+                    Some(parent) => {
+                        if parent.parent_id == curr {
+                            break;
+                        }
+                        curr = parent.parent_id;
+                    }
+                    None => break,
+                }
+            }
+            if is_dominated {
                 continue;
             }
 
@@ -88,10 +121,11 @@ impl ClassifierPipeline {
                     }
 
                     let modified = latest_modified.or(record.modified_at);
+                    let target_path = index.resolve_path(record.id);
 
                     let candidate = ReclaimCandidate::new(
                         category,
-                        record.path.clone(),
+                        target_path,
                         size_bytes,
                         modified,
                         file_count,
@@ -100,7 +134,7 @@ impl ClassifierPipeline {
                         GitRepoStatus::NotInRepo,
                     );
 
-                    seen_paths.insert(record.path.clone());
+                    candidate_ids.insert(record.id);
                     candidates.push(candidate);
                     break;
                 }

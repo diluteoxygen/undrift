@@ -27,10 +27,19 @@ impl ClassificationRule for WindowsUpdateRule {
             ));
         }
 
-        let path_str = record.path.to_string_lossy().to_lowercase();
-        if path_str.ends_with(r"\softwaredistribution\download")
-            || path_str.ends_with("/softwaredistribution/download")
-        {
+        let in_softwaredistribution = if !record.path.as_os_str().is_empty() {
+            let path_str = record.path.to_string_lossy().to_lowercase();
+            path_str.ends_with(r"\softwaredistribution\download")
+                || path_str.ends_with("/softwaredistribution/download")
+        } else {
+            name == "download"
+                && _index
+                    .get_record(record.parent_id)
+                    .map(|p| p.name.eq_ignore_ascii_case("softwaredistribution"))
+                    .unwrap_or(false)
+        };
+
+        if in_softwaredistribution {
             return Some((
                 ArtifactCategory::WindowsUpdate,
                 "Cached Windows Update downloaded installation packages".to_string(),

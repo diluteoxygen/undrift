@@ -1,10 +1,8 @@
 use super::{ScanError, ScanIndex, VolumeScanner};
 use crate::model::file_record::FileRecord;
 use chrono::{DateTime, Utc};
-use ntfs_reader::file_info::{FileInfo, HashMapCache};
 use ntfs_reader::mft::Mft;
 use ntfs_reader::volume::Volume;
-use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
@@ -47,53 +45,70 @@ impl VolumeScanner for NtfsMftScanner {
 
         let root_canonical = target_path.to_path_buf();
         let mut index = ScanIndex::new(root_canonical);
-        let mut path_to_id: HashMap<PathBuf, u64> = HashMap::new();
-        let mut cache = HashMapCache::default();
-        let mut next_id = 1u64;
 
         for file in mft.files() {
-            let info = FileInfo::with_cache(&mft, &file, &mut cache);
-            let path = info.path;
-            if path.as_os_str().is_empty() {
-                continue;
-            }
-
-            let parent_path = path.parent().map(|p| p.to_path_buf()).unwrap_or_default();
-            let parent_id = if parent_path.as_os_str().is_empty() {
-                0
-            } else {
-                *path_to_id.entry(parent_path.clone()).or_insert_with(|| {
-                    let id = next_id;
-                    next_id += 1;
-                    id
-                })
+            let record_id = file.number();
+            let best_name = match file.get_best_file_name(&mft) {
+                Some(n) => n,
+                None => continue,
             };
 
-            let current_id = *path_to_id.entry(path.clone()).or_insert_with(|| {
-                let id = next_id;
-                next_id += 1;
-                id
-            });
+            let name = best_name.to_string();
+            let parent_id = best_name.parent();
+            let is_dir = file.is_directory();
 
-            let modified_at = info.modified.map(|dt| {
-                DateTime::<Utc>::from_timestamp(dt.unix_timestamp(), dt.nanosecond())
-                    .unwrap_or_default()
-            });
-            let created_at = info.created.map(|dt| {
-                DateTime::<Utc>::from_timestamp(dt.unix_timestamp(), dt.nanosecond())
-                    .unwrap_or_default()
-            });
+            let mut created_at = None;
+            let mut modified_at = None;
+            let mut size_bytes = 0u64;
+            let mut attributes = best_name.header.file_attributes;
+
+            for rec in mft.file_records(&file) {
+                rec.attributes(|att| {
+                    if att.header.type_id
+                        == ntfs_reader::api::NtfsAttributeType::StandardInformation as u32
+                    {
+                        if let Some(stdinfo) = att.as_standard_info() {
+                            let c_time = ntfs_reader::api::ntfs_to_unix_time(stdinfo.creation_time);
+                            let m_time =
+                                ntfs_reader::api::ntfs_to_unix_time(stdinfo.modification_time);
+                            created_at = DateTime::<Utc>::from_timestamp(
+                                c_time.unix_timestamp(),
+                                c_time.nanosecond(),
+                            );
+                            modified_at = DateTime::<Utc>::from_timestamp(
+                                m_time.unix_timestamp(),
+                                m_time.nanosecond(),
+                            );
+                            attributes = stdinfo.file_attributes;
+                        }
+                    }
+
+                    if att.header.type_id == ntfs_reader::api::NtfsAttributeType::Data as u32
+                        && att.header.name_length == 0
+                    {
+                        if att.header.is_non_resident == 0 {
+                            if let Some(header) = att.resident_header() {
+                                size_bytes = header.value_length as u64;
+                            }
+                        } else if let Some(header) = att.nonresident_header() {
+                            if header.lowest_vcn == 0 {
+                                size_bytes = header.data_size;
+                            }
+                        }
+                    }
+                });
+            }
 
             let record = FileRecord::new(
-                current_id,
+                record_id,
                 parent_id,
-                info.name,
-                path,
-                info.is_directory,
-                info.size,
+                name,
+                PathBuf::new(), // Path is resolved lazily for surfaced candidates only
+                is_dir,
+                size_bytes,
                 modified_at,
                 created_at,
-                info.file_attributes,
+                attributes,
             );
 
             index.insert_record(record);

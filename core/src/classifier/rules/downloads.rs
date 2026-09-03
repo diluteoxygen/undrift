@@ -34,18 +34,34 @@ impl ClassificationRule for DownloadsRule {
             return None;
         }
 
-        let path_str = record.path.to_string_lossy();
-        let in_downloads = path_str.contains("/Downloads/")
-            || path_str.contains(r"\Downloads\")
-            || path_str.ends_with("/Downloads")
-            || path_str.ends_with(r"\Downloads");
+        let in_downloads = if !record.path.as_os_str().is_empty() {
+            let path_str = record.path.to_string_lossy();
+            path_str.contains("/Downloads/")
+                || path_str.contains(r"\Downloads\")
+                || path_str.ends_with("/Downloads")
+                || path_str.ends_with(r"\Downloads")
+        } else {
+            let mut curr = record.parent_id;
+            let mut found = false;
+            for _ in 0..5 {
+                if let Some(parent) = _index.get_record(curr) {
+                    if parent.name.eq_ignore_ascii_case("downloads") {
+                        found = true;
+                        break;
+                    }
+                    curr = parent.parent_id;
+                } else {
+                    break;
+                }
+            }
+            found
+        };
 
         if !in_downloads {
             return None;
         }
 
-        let ext = record
-            .path
+        let ext = std::path::Path::new(&record.name)
             .extension()
             .and_then(|s| s.to_str())?
             .to_lowercase();

@@ -50,3 +50,36 @@ graph TD
 ### Seam 4: Interop Seam (`core/src/ffi.rs` & `app/CoreInterop/`)
 - **Interface**: JSON-over-stdio CLI (`undrift scan --json`) and C-ABI P/Invoke exports (`undrift_scan_path`, `undrift_clean_json`).
 - **Hiding**: Completely decouples the C# WinUI 3 process from Rust internal memory structures.
+
+## 3. Performance Architecture & Benchmarks
+
+To maintain WizTree-class scanning and classification performance on real monorepos and multi-terabyte drives, the engine enforces five performance invariants:
+
+1. **Zero Path Hashing during Ingestion**:
+   - `NtfsMftScanner` ingests raw NTFS records directly by their native 64-bit file reference number (`file.number()`) and parent directory reference (`name.parent()`).
+   - String path construction (`PathBuf`) is entirely bypassed during volume scanning. Paths are only resolved lazily for surfaced candidates via `ScanIndex::resolve_path(record_id)`.
+
+2. **$O(\text{Tree Depth})$ Candidate Ancestor Suppression**:
+   - `ClassifierPipeline` suppresses nested sub-dependencies (e.g. `node_modules` inside another package's `node_modules`) without string prefix scans.
+   - It maintains a `HashSet<u64>` of matched candidate IDs and climbs the `parent_id` chain up the in-memory tree hierarchy. This avoids quadratic string checks ($O(N \times M)$) and runs in microseconds ($O(N \times \text{depth})$).
+
+3. **Thread-Safe Per-Repository Git Status Caching**:
+   - `GitSafetyChecker` caches discovered repository roots and uncommitted status entries in an `RwLock<HashMap<PathBuf, ...>>`.
+   - In monorepos containing dozens or hundreds of build artifacts, `repo.statuses()` runs exactly once per repository root. Subsequent candidate evaluations within that repo filter dirty paths in-memory without invoking git2 or touching disk.
+
+4. **Rayon Multi-Core Safety Pipeline**:
+   - Candidate safety evaluation is parallelized across available CPU threads using `rayon::par_iter_mut()`.
+   - Thread-safe caches allow simultaneous evaluation of candidate locks, reparse points, and git status without mutex contention.
+
+5. **Windows Restart Manager API**:
+   - On Windows, `InUseChecker` queries the native Restart Manager (`RmStartSession`, `RmRegisterResources`, `RmGetList`, `RmEndSession`) to authoritatively detect processes holding active handles inside a candidate directory.
+   - Cross-platform builds fall back gracefully to non-blocking file probe heuristics.
+
+### Running the Performance Benchmark
+
+Run the automated synthetic benchmark harness:
+```bash
+cargo bench
+```
+The harness generates a multi-package monorepo fixture (Node, Rust, Python, and Downloads), benchmarks ingestion throughput, classification latency, and parallel safety pipeline time, printing a structured timing report.
+

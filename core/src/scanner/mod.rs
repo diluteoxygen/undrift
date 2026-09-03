@@ -89,14 +89,44 @@ impl ScanIndex {
             .is_some_and(|children| {
                 children.iter().any(|&child_id| {
                     self.records.get(&child_id).is_some_and(|child| {
-                        child
-                            .path
+                        Path::new(&child.name)
                             .extension()
                             .and_then(|s| s.to_str())
                             .is_some_and(|ext| ext.eq_ignore_ascii_case(&ext_lower))
                     })
                 })
             })
+    }
+
+    /// Lazily resolves the full path of a record by climbing the parent chain to the root.
+    /// Used for candidates surfacing, avoiding expensive path computation during ingestion.
+    pub fn resolve_path(&self, record_id: u64) -> PathBuf {
+        if let Some(record) = self.records.get(&record_id)
+            && !record.path.as_os_str().is_empty()
+        {
+            return record.path.clone();
+        }
+
+        let mut components = Vec::new();
+        let mut curr_id = record_id;
+
+        while let Some(record) = self.records.get(&curr_id) {
+            if !record.name.is_empty() && record.name != "." && record.name != "\\" {
+                components.push(record.name.clone());
+            }
+
+            // Stop at root directory
+            if record.parent_id == 0 || record.parent_id == curr_id || record.parent_id == 5 {
+                break;
+            }
+            curr_id = record.parent_id;
+        }
+
+        let mut path = self.root_path.clone();
+        for comp in components.into_iter().rev() {
+            path.push(comp);
+        }
+        path
     }
 
     /// Calculate total bytes, file count, and latest modified timestamp for a subtree

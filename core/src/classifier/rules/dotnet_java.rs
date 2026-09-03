@@ -47,8 +47,18 @@ impl ClassificationRule for DotnetJavaRule {
         }
 
         // Maven local cache
-        let path_str = record.path.to_string_lossy().to_lowercase();
-        if path_str.ends_with(".m2/repository") || path_str.ends_with(r".m2\repository") {
+        let in_maven_repo = if !record.path.as_os_str().is_empty() {
+            let path_str = record.path.to_string_lossy().to_lowercase();
+            path_str.ends_with(".m2/repository") || path_str.ends_with(r".m2\repository")
+        } else {
+            name == "repository"
+                && index
+                    .get_record(record.parent_id)
+                    .map(|p| p.name.eq_ignore_ascii_case(".m2"))
+                    .unwrap_or(false)
+        };
+
+        if in_maven_repo {
             return Some((
                 ArtifactCategory::MavenCache,
                 "Maven local dependency cache (re-downloadable via mvn compile)".to_string(),
@@ -56,10 +66,20 @@ impl ClassificationRule for DotnetJavaRule {
         }
 
         // NuGet package cache
-        if (name == "packages" && path_str.contains(".nuget"))
-            || path_str.ends_with(".nuget/packages")
-            || path_str.ends_with(r".nuget\packages")
-        {
+        let in_nuget_packages = if !record.path.as_os_str().is_empty() {
+            let path_str = record.path.to_string_lossy().to_lowercase();
+            (name == "packages" && path_str.contains(".nuget"))
+                || path_str.ends_with(".nuget/packages")
+                || path_str.ends_with(r".nuget\packages")
+        } else {
+            name == "packages"
+                && index
+                    .get_record(record.parent_id)
+                    .map(|p| p.name.to_lowercase().contains(".nuget"))
+                    .unwrap_or(false)
+        };
+
+        if in_nuget_packages {
             return Some((
                 ArtifactCategory::NugetCache,
                 "NuGet global package cache (re-downloadable via dotnet restore)".to_string(),

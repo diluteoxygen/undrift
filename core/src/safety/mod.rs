@@ -7,21 +7,31 @@ use crate::model::candidate::ReclaimCandidate;
 use cloud_storage::CloudStorageChecker;
 use git::GitSafetyChecker;
 use in_use::InUseChecker;
+use rayon::prelude::*;
 use reparse::ReparseChecker;
 
 pub struct SafetyPipeline;
 
 impl SafetyPipeline {
-    /// Validates safety guarantees for all candidates
+    /// Validates safety guarantees for all candidates in parallel using rayon
     pub fn evaluate_candidates(candidates: &mut [ReclaimCandidate]) {
-        for candidate in candidates.iter_mut() {
-            Self::evaluate_candidate(candidate);
-        }
+        let git_checker = GitSafetyChecker::new();
+        candidates.par_iter_mut().for_each(|candidate| {
+            Self::evaluate_candidate_with_git(candidate, &git_checker);
+        });
     }
 
     pub fn evaluate_candidate(candidate: &mut ReclaimCandidate) {
-        // 1. Check Git status
-        let (git_status, git_err) = GitSafetyChecker::check_path(&candidate.path);
+        let git_checker = GitSafetyChecker::new();
+        Self::evaluate_candidate_with_git(candidate, &git_checker);
+    }
+
+    pub fn evaluate_candidate_with_git(
+        candidate: &mut ReclaimCandidate,
+        git_checker: &GitSafetyChecker,
+    ) {
+        // 1. Check Git status (uses cached repo status)
+        let (git_status, git_err) = git_checker.check_path(&candidate.path);
         candidate.git_status = git_status;
 
         if let Some(err_msg) = git_err {
@@ -64,7 +74,7 @@ impl SafetyPipeline {
     pub fn pre_clean_check(path: &std::path::Path) -> Option<String> {
         let path_buf = path.to_path_buf();
 
-        if let Some(err_msg) = GitSafetyChecker::check_path(&path_buf).1 {
+        if let Some(err_msg) = GitSafetyChecker::check_path_once(&path_buf).1 {
             return Some(err_msg);
         }
 

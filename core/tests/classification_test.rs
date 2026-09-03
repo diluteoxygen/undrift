@@ -61,3 +61,42 @@ fn test_classify_node_modules_and_rust_target() {
     assert!(rust_candidate.size_bytes >= 100 * 1024);
     assert_eq!(rust_candidate.path, rust_dir.join("target"));
 }
+
+#[test]
+fn test_nested_candidate_ancestor_dedup() {
+    let temp_dir = TempDir::new().unwrap();
+    let root = temp_dir.path();
+
+    // Setup nested Node.js project:
+    // root/app/package.json
+    // root/app/node_modules/child/package.json
+    // root/app/node_modules/child/node_modules/leaf
+    let app_dir = root.join("app");
+    let outer_nm = app_dir.join("node_modules");
+    let child_pkg = outer_nm.join("child");
+    let inner_nm = child_pkg.join("node_modules");
+
+    create_dir_all(&inner_nm).unwrap();
+    write(app_dir.join("package.json"), r#"{"name": "app"}"#).unwrap();
+    write(child_pkg.join("package.json"), r#"{"name": "child"}"#).unwrap();
+    write(inner_nm.join("file.js"), "content").unwrap();
+
+    let scanner = DirWalkScanner::new();
+    let index = scanner.scan(root).unwrap();
+
+    let pipeline = ClassifierPipeline::new(0);
+    let candidates = pipeline.classify(&index);
+
+    // Only the outer node_modules should be returned as a candidate, not the nested one
+    let nm_candidates: Vec<_> = candidates
+        .iter()
+        .filter(|c| c.category == ArtifactCategory::NodeModules)
+        .collect();
+
+    assert_eq!(
+        nm_candidates.len(),
+        1,
+        "Nested node_modules must be suppressed by ancestor check"
+    );
+    assert_eq!(nm_candidates[0].path, outer_nm);
+}
