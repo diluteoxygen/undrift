@@ -2,17 +2,17 @@ use clap::{Parser, Subcommand};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
-use undrift_core::classifier::ClassifierPipeline;
-use undrift_core::cleaner::CleanExecutor;
-use undrift_core::cleaner::history::HistoryManager;
-use undrift_core::output::{ScanResultJson, ScanStreamEvent, print_human_table};
-use undrift_core::safety::SafetyPipeline;
-use undrift_core::scanner::VolumeScanner;
-use undrift_core::scanner::dir_walk::DirWalkScanner;
+use sweepie_core::classifier::ClassifierPipeline;
+use sweepie_core::cleaner::CleanExecutor;
+use sweepie_core::cleaner::history::HistoryManager;
+use sweepie_core::output::{ScanResultJson, ScanStreamEvent, print_human_table};
+use sweepie_core::safety::SafetyPipeline;
+use sweepie_core::scanner::VolumeScanner;
+use sweepie_core::scanner::dir_walk::DirWalkScanner;
 
 #[derive(Parser)]
 #[command(
-    name = "undrift",
+    name = "sweepie",
     author = "Vikrant Singh",
     version = "0.1.0",
     about = "Windows-native disk space reclaiming tool for developers. Fast MFT scanning, dev-aware judgment, zero telemetry."
@@ -125,16 +125,16 @@ fn run_scan(
     let start_total = Instant::now();
 
     #[allow(unused_variables, unused_mut)]
-    let index_file = undrift_core::scanner::persistent_index::get_index_path_for_volume(target_str);
+    let index_file = sweepie_core::scanner::persistent_index::get_index_path_for_volume(target_str);
     #[allow(unused_variables, unused_mut)]
     let mut index_opt = None;
 
     #[cfg(windows)]
     {
         if let Ok(checkpoint) =
-            undrift_core::scanner::persistent_index::query_usn_checkpoint(target_path)
+            sweepie_core::scanner::persistent_index::query_usn_checkpoint(target_path)
             && let Ok(persistent) =
-                undrift_core::scanner::persistent_index::PersistentIndex::load_from_disk(
+                sweepie_core::scanner::persistent_index::PersistentIndex::load_from_disk(
                     &index_file,
                 )
         {
@@ -162,7 +162,7 @@ fn run_scan(
                     let is_root_drive =
                         (target_str.len() <= 3 && target_str.contains(':')) || force_mft;
                     if is_root_drive {
-                        Box::new(undrift_core::scanner::ntfs_mft::NtfsMftScanner::new())
+                        Box::new(sweepie_core::scanner::ntfs_mft::NtfsMftScanner::new())
                     } else {
                         Box::new(DirWalkScanner::new())
                     }
@@ -179,9 +179,9 @@ fn run_scan(
             #[cfg(windows)]
             {
                 if let Ok(checkpoint) =
-                    undrift_core::scanner::persistent_index::query_usn_checkpoint(target_path)
+                    sweepie_core::scanner::persistent_index::query_usn_checkpoint(target_path)
                 {
-                    let persistent = undrift_core::scanner::persistent_index::PersistentIndex::new(
+                    let persistent = sweepie_core::scanner::persistent_index::PersistentIndex::new(
                         target_str,
                         checkpoint.journal_id,
                         checkpoint.next_usn,
@@ -244,7 +244,7 @@ fn run_clean(
         println!(
             "════════════════════════════════════════════════════════════════════════════════════════"
         );
-        println!("  UNDRIFT CLEANUP REVIEW");
+        println!("  SWEEPIE CLEANUP REVIEW");
         println!(
             "════════════════════════════════════════════════════════════════════════════════════════"
         );
@@ -327,7 +327,7 @@ fn run_history() {
     println!(
         "════════════════════════════════════════════════════════════════════════════════════════"
     );
-    println!("  UNDRIFT CLEANUP HISTORY");
+    println!("  SWEEPIE CLEANUP HISTORY");
     println!(
         "════════════════════════════════════════════════════════════════════════════════════════"
     );
@@ -344,7 +344,7 @@ fn run_history() {
     println!(
         "  Total cleanups: {}  |  Lifetime space reclaimed: {}",
         records.len(),
-        undrift_core::model::candidate::format_size(total_reclaimed_all_time)
+        sweepie_core::model::candidate::format_size(total_reclaimed_all_time)
     );
     println!(
         "────────────────────────────────────────────────────────────────────────────────────────"

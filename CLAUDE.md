@@ -1,17 +1,17 @@
-# CLAUDE.md — Claude Code Developer Guide for Undrift
+# CLAUDE.md — Claude Code Developer Guide for Sweepie
 
 > Project handoff and instructions for Claude Code running on Windows or Linux.
 
 ## Project Overview
 
-Undrift is a high-performance Windows space-reclaiming utility combining WizTree-class MFT scanning speed, developer artifact judgment (Node, Rust, Python, .NET, IDEs), strict safety verification (Git-dirty checks), and a native WinUI 3 Fluent 2 interface.
+Sweepie is a high-performance Windows space-reclaiming utility combining WizTree-class MFT scanning speed, developer artifact judgment (Node, Rust, Python, .NET, IDEs), strict safety verification (Git-dirty checks), and a native WinUI 3 Fluent 2 interface.
 
 ## Architecture
 
 - **`core/`**: Rust crate producing:
-  - `undrift` (CLI binary for standalone use and subprocess invocation)
-  - `undrift_core` (`cdylib` / DLL exporting C-ABI functions in `core/src/ffi.rs`)
-- **`app/`**: C# / .NET 8 WinUI 3 project (`Undrift.App`) invoking `core` via `CoreCliBridge` or `CoreNativeFfi`.
+  - `sweepie` (CLI binary for standalone use and subprocess invocation)
+  - `sweepie_core` (`cdylib` / DLL exporting C-ABI functions in `core/src/ffi.rs`)
+- **`app/`**: C# / .NET 8 WinUI 3 project (`Sweepie.App`) invoking `core` via `CoreCliBridge` or `CoreNativeFfi`.
 - **`.agents/skills/`**: Curated Matt Pocock skills defining the team's engineering standards (deep modules, TDD, unslop).
 
 ## Essential Commands
@@ -27,8 +27,8 @@ cargo run -- scan C: --json
 cargo run -- scan . --all
 
 # Build WinUI 3 app (Windows)
-dotnet build app/Undrift.App.sln
-dotnet run --project app/Undrift.App/Undrift.App.csproj
+dotnet build app/Sweepie.App.sln
+dotnet run --project app/Sweepie.App/Sweepie.App.csproj
 ```
 
 ## Critical Rules to Respect

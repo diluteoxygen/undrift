@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml;
 
-namespace Undrift.App;
+namespace Sweepie.App;
 
 public partial class App : Application
 {

@@ -5,9 +5,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Undrift.App.CoreInterop;
+using Sweepie.App.CoreInterop;
 
-namespace Undrift.App.ViewModels;
+namespace Sweepie.App.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {

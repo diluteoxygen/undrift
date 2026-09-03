@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Undrift.App.CoreInterop;
+using Sweepie.App.CoreInterop;
 
-namespace Undrift.App.ViewModels;
+namespace Sweepie.App.ViewModels;
 
 public partial class CandidateViewModel : ObservableObject
 {

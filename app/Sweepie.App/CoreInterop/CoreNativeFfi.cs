@@ -2,29 +2,29 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 
-namespace Undrift.App.CoreInterop;
+namespace Sweepie.App.CoreInterop;
 
 public static class CoreNativeFfi
 {
-    private const string DllName = "undrift_core";
+    private const string DllName = "sweepie_core";
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-    public static extern IntPtr undrift_version();
+    public static extern IntPtr sweepie_version();
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-    public static extern int undrift_scan_path(string path, out IntPtr jsonOut);
+    public static extern int sweepie_scan_path(string path, out IntPtr jsonOut);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-    public static extern int undrift_clean_json(string requestJson, out IntPtr resultOut);
+    public static extern int sweepie_clean_json(string requestJson, out IntPtr resultOut);
 
     [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-    public static extern void undrift_free_string(IntPtr ptr);
+    public static extern void sweepie_free_string(IntPtr ptr);
 
     public static string? GetVersion()
     {
         try
         {
-            IntPtr ptr = undrift_version();
+            IntPtr ptr = sweepie_version();
             return Marshal.PtrToStringAnsi(ptr);
         }
         catch
@@ -35,7 +35,7 @@ public static class CoreNativeFfi
 
     public static ScanResult? ScanPathDirect(string path)
     {
-        int code = undrift_scan_path(path, out IntPtr jsonPtr);
+        int code = sweepie_scan_path(path, out IntPtr jsonPtr);
         if (code != 0 || jsonPtr == IntPtr.Zero)
         {
             return null;
@@ -48,7 +48,7 @@ public static class CoreNativeFfi
         }
         finally
         {
-            undrift_free_string(jsonPtr);
+            sweepie_free_string(jsonPtr);
         }
     }
 }

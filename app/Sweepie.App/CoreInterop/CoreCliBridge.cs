@@ -6,7 +6,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Undrift.App.CoreInterop;
+namespace Sweepie.App.CoreInterop;
 
 public sealed class CoreCliBridge
 {
@@ -25,7 +25,7 @@ public sealed class CoreCliBridge
     private static string FindExecutablePath()
     {
         string baseDir = AppContext.BaseDirectory;
-        string exeName = OperatingSystem.IsWindows() ? "undrift.exe" : "undrift";
+        string exeName = OperatingSystem.IsWindows() ? "sweepie.exe" : "sweepie";
 
         string[] candidateLocations =
         [

@@ -1,5 +1,5 @@
 [package]
-name = "undrift-core"
+name = "sweepie-core"
 version = "0.1.0"
 edition = "2024"
 authors = ["Vikrant Singh <vikrantsinghtomar011@gmail.com>"]
@@ -7,11 +7,11 @@ description = "High-performance disk space reclaiming engine with MFT scanning a
 license = "MIT"
 
 [lib]
-name = "undrift_core"
+name = "sweepie_core"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "undrift"
+name = "sweepie"
 path = "src/main.rs"
 
 [dependencies]

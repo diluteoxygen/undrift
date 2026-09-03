@@ -1,15 +1,15 @@
 use std::fs::{create_dir_all, hard_link, write};
 use std::time::Instant;
 use tempfile::TempDir;
-use undrift_core::classifier::ClassifierPipeline;
-use undrift_core::safety::SafetyPipeline;
-use undrift_core::scanner::VolumeScanner;
-use undrift_core::scanner::dir_walk::DirWalkScanner;
-use undrift_core::scanner::persistent_index::{PersistentIndex, UsnCheckpoint, UsnDeltaRecord};
+use sweepie_core::classifier::ClassifierPipeline;
+use sweepie_core::safety::SafetyPipeline;
+use sweepie_core::scanner::VolumeScanner;
+use sweepie_core::scanner::dir_walk::DirWalkScanner;
+use sweepie_core::scanner::persistent_index::{PersistentIndex, UsnCheckpoint, UsnDeltaRecord};
 
 fn main() {
     println!("\n═════════════════════════════════════════════════════════════════════════");
-    println!("  UNDRIFT BENCHMARK: COLD SCAN VS USN WARM INCREMENTAL INDEX");
+    println!("  SWEEPIE BENCHMARK: COLD SCAN VS USN WARM INCREMENTAL INDEX");
     println!("═════════════════════════════════════════════════════════════════════════");
 
     let temp_dir = TempDir::new().expect("Failed to create temp fixture directory");

@@ -1,13 +1,13 @@
 <Window
-    x:Class="Undrift.App.MainWindow"
+    x:Class="Sweepie.App.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:local="using:Undrift.App"
-    xmlns:vm="using:Undrift.App.ViewModels"
+    xmlns:local="using:Sweepie.App"
+    xmlns:vm="using:Sweepie.App.ViewModels"
     mc:Ignorable="d"
-    Title="Undrift — Space Reclaiming for Developers">
+    Title="Sweepie — Space Reclaiming for Developers">
 
     <Window.SystemBackdrop>
         <MicaBackdrop Kind="Base" />
@@ -52,7 +52,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Orientation="Vertical" Spacing="2">
-                <TextBlock Text="Undrift" FontSize="26" FontWeight="SemiBold" FontFamily="{StaticResource AppFontFamily}" />
+                <TextBlock Text="Sweepie" FontSize="26" FontWeight="SemiBold" FontFamily="{StaticResource AppFontFamily}" />
                 <TextBlock Text="Precision developer disk space reclaimer • Direct MFT speed • Zero telemetry" 
                            FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             </StackPanel>
@@ -236,7 +236,7 @@
                     <!-- 1. Initial State (before scan) -->
                     <StackPanel Spacing="10" HorizontalAlignment="Center"
                                 Visibility="{x:Bind ViewModel.HasScanned, Mode=OneWay, Converter={StaticResource InverseBoolToVisibilityConverter}}">
-                        <FontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="44" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" HorizontalAlignment="Center" />
+                        <Image Source="ms-appx:///Assets/capybara_nobackground.png" Width="96" Height="96" HorizontalAlignment="Center" Stretch="Uniform" />
                         <TextBlock Text="Ready to scan for reclaimable space" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         <TextBlock Text="Enter a drive letter (e.g. C:) or project path above and click 'Scan MFT' to discover disposable dependencies (node_modules, target, .venv), build artifacts, and stale installers."
                                    FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" MaxWidth="440" TextAlignment="Center" HorizontalAlignment="Center" />
@@ -245,7 +245,7 @@
                     <!-- 2. Zero-Results State (after scan) -->
                     <StackPanel Spacing="10" HorizontalAlignment="Center"
                                 Visibility="{x:Bind ViewModel.HasScanned, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <FontIcon Glyph="&#xE73E;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="44" Foreground="{ThemeResource SystemFillColorSuccessBrush}" HorizontalAlignment="Center" />
+                        <Image Source="ms-appx:///Assets/capybara_nobackground.png" Width="96" Height="96" HorizontalAlignment="Center" Stretch="Uniform" Opacity="0.8" />
                         <TextBlock Text="No reclaimable artifacts found" FontSize="17" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         <TextBlock Text="Your drive or project directory is already clean. No disposable build caches or dead dependencies were detected."
                                    FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" MaxWidth="380" TextAlignment="Center" HorizontalAlignment="Center" />

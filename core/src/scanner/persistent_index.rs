@@ -172,7 +172,7 @@ pub fn get_default_index_dir() -> PathBuf {
     {
         if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
             return PathBuf::from(local_app_data)
-                .join("undrift")
+                .join("sweepie")
                 .join("indexes");
         }
     }
@@ -180,10 +180,10 @@ pub fn get_default_index_dir() -> PathBuf {
         return PathBuf::from(home)
             .join(".local")
             .join("share")
-            .join("undrift")
+            .join("sweepie")
             .join("indexes");
     }
-    std::env::temp_dir().join("undrift").join("indexes")
+    std::env::temp_dir().join("sweepie").join("indexes")
 }
 
 pub fn get_index_path_for_volume(volume: &str) -> PathBuf {

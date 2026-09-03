@@ -19,11 +19,11 @@ pub struct HistoryManager;
 impl HistoryManager {
     pub fn history_file_path() -> PathBuf {
         let base = if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
-            PathBuf::from(local_app_data).join("Undrift")
+            PathBuf::from(local_app_data).join("Sweepie")
         } else if let Ok(home) = std::env::var("HOME") {
-            PathBuf::from(home).join(".undrift")
+            PathBuf::from(home).join(".sweepie")
         } else {
-            PathBuf::from(".undrift")
+            PathBuf::from(".sweepie")
         };
         base.join("history.jsonl")
     }

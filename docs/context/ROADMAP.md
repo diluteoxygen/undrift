@@ -1,6 +1,6 @@
-# ROADMAP.md — Undrift Product Roadmap
+# ROADMAP.md — Sweepie Product Roadmap
 
-> Structured milestone plan for Undrift from v1 MVP to v2 WizTree-class visualization.
+> Structured milestone plan for Sweepie from v1 MVP to v2 WizTree-class visualization.
 
 ## Milestone v1 (MVP) — Current Target
 
@@ -12,7 +12,7 @@
 - [x] Native C# / .NET 8 WinUI 3 Fluent 2 shell with Mica backdrop and Segoe UI Variable
 - [ ] Windows hardware live MFT benchmarking & memory profile tuning (< 50MB idle RAM)
 - [ ] Code signing pipeline (Azure Artifact Signing or standard OV cert)
-- [ ] Winget package distribution manifest (`winget install undrift`)
+- [ ] Winget package distribution manifest (`winget install sweepie`)
 
 ## Milestone v1.1 — Containers & Multi-Drive
 

@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-    <RootNamespace>Undrift.App</RootNamespace>
+    <RootNamespace>Sweepie.App</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Platforms>x64;ARM64</Platforms>
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
@@ -24,20 +25,20 @@
   </ItemGroup>
 
   <!-- Automatically bundle Rust core binary and cdylib DLL when available -->
-  <ItemGroup Condition="Exists('..\..\target\release\undrift.exe')">
-    <None Include="..\..\target\release\undrift.exe">
+  <ItemGroup Condition="Exists('..\..\target\release\sweepie.exe')">
+    <None Include="..\..\target\release\sweepie.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\target\release\undrift_core.dll">
+    <None Include="..\..\target\release\sweepie_core.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
-  <ItemGroup Condition="!Exists('..\..\target\release\undrift.exe') and Exists('..\..\target\debug\undrift.exe')">
-    <None Include="..\..\target\debug\undrift.exe">
+  <ItemGroup Condition="!Exists('..\..\target\release\sweepie.exe') and Exists('..\..\target\debug\sweepie.exe')">
+    <None Include="..\..\target\debug\sweepie.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\target\debug\undrift_core.dll">
+    <None Include="..\..\target\debug\sweepie_core.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

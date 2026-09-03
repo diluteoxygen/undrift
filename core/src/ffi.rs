@@ -25,7 +25,7 @@ struct CleanTargetItem {
 /// # Safety
 /// Pointer must be a valid CString allocated by this library or null.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn undrift_free_string(ptr: *mut c_char) {
+pub unsafe extern "C" fn sweepie_free_string(ptr: *mut c_char) {
     if !ptr.is_null() {
         unsafe {
             let _ = CString::from_raw(ptr);
@@ -35,7 +35,7 @@ pub unsafe extern "C" fn undrift_free_string(ptr: *mut c_char) {
 
 /// Returns library version string
 #[unsafe(no_mangle)]
-pub extern "C" fn undrift_version() -> *mut c_char {
+pub extern "C" fn sweepie_version() -> *mut c_char {
     CString::new(env!("CARGO_PKG_VERSION")).unwrap().into_raw()
 }
 
@@ -43,7 +43,7 @@ pub extern "C" fn undrift_version() -> *mut c_char {
 /// # Safety
 /// Pointers must be valid C-strings and valid output storage.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn undrift_scan_path(
+pub unsafe extern "C" fn sweepie_scan_path(
     path_ptr: *const c_char,
     json_out: *mut *mut c_char,
 ) -> i32 {
@@ -112,7 +112,7 @@ pub unsafe extern "C" fn undrift_scan_path(
 /// # Safety
 /// Pointers must be valid C-strings and valid output storage.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn undrift_clean_json(
+pub unsafe extern "C" fn sweepie_clean_json(
     request_ptr: *const c_char,
     result_out: *mut *mut c_char,
 ) -> i32 {

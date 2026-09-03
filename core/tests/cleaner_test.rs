@@ -1,6 +1,6 @@
 use std::fs::{create_dir_all, write};
 use tempfile::TempDir;
-use undrift_core::cleaner::CleanExecutor;
+use sweepie_core::cleaner::CleanExecutor;
 
 #[test]
 fn test_cleaner_dry_run_and_permanent() {

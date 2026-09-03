@@ -6,10 +6,10 @@ using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Undrift.App.CoreInterop;
-using Undrift.App.ViewModels;
+using Sweepie.App.CoreInterop;
+using Sweepie.App.ViewModels;
 
-namespace Undrift.App;
+namespace Sweepie.App;
 
 public sealed partial class MainWindow : Window
 {
@@ -20,7 +20,8 @@ public sealed partial class MainWindow : Window
         ViewModel = new MainViewModel();
         this.InitializeComponent();
 
-        Title = "Undrift — Space Reclaiming for Developers";
+        Title = "Sweepie — Space Reclaiming for Developers";
+        AppWindow.SetIcon("Assets\\AppIcon.ico");
         ViewModel.ConfirmCleanCallback = ShowCleanConfirmationDialogAsync;
     }
 

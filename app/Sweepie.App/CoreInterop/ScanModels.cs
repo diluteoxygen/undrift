@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace Undrift.App.CoreInterop;
+namespace Sweepie.App.CoreInterop;
 
 public sealed record ScanResult
 {

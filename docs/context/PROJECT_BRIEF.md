@@ -66,7 +66,7 @@ Not a tweak dashboard. Not a registry cleaner. Not a game. A precision instrumen
 
 - Native Fluent 2: Mica material, system accent color, automatic light/dark, Segoe UI Variable. Not a webview wearing a Windows skin.
 - No mascot, no illustrated theme. chippytea's fish-and-chips branding is a fun regional pun for one UK developer's side project; it doesn't transplant, and a straight visual copy would look derivative. This needs its own identity.
-- Naming: avoid "Cleaner / Booster / Optimizer / Turbo" — that category is exactly the one CCleaner and the IObit-style tools have poisoned. Picked: **Undrift**.
+- Naming: avoid "Cleaner / Booster / Optimizer / Turbo" — that category is exactly the one CCleaner and the IObit-style tools have poisoned. Picked: **Sweepie**.
 - Motion should be functional: a scan reveals results progressively because the MFT read is fast enough to show live, not because it's animated for effect. No confetti on a successful clean.
 
 ## 7. Technical Architecture
@@ -82,7 +82,7 @@ Same division of labor chippytea uses — native UI in front, Rust doing the rea
 
 - Standard OV certificate or Azure Artifact Signing.
 - Two channels:
-  1. Signed installer + winget manifest (`winget install Undrift`).
+  1. Signed installer + winget manifest (`winget install Sweepie`).
   2. MSIX listing on the Microsoft Store.
 
 ## 9. Performance Target Numbers

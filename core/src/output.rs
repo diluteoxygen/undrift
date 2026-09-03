@@ -63,7 +63,7 @@ pub fn print_human_table(result: &ScanResultJson, show_all: bool) {
     println!(
         "═════════════════════════════════════════════════════════════════════════════════════════════════"
     );
-    println!("  UNDRIFT — High-Performance Disk Space Reclaimer");
+    println!("  SWEEPIE — High-Performance Disk Space Reclaimer");
     println!(
         "═════════════════════════════════════════════════════════════════════════════════════════════════"
     );

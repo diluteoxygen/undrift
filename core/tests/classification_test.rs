@@ -1,9 +1,9 @@
 use std::fs::{create_dir_all, write};
 use tempfile::TempDir;
-use undrift_core::classifier::ClassifierPipeline;
-use undrift_core::model::ArtifactCategory;
-use undrift_core::scanner::VolumeScanner;
-use undrift_core::scanner::dir_walk::DirWalkScanner;
+use sweepie_core::classifier::ClassifierPipeline;
+use sweepie_core::model::ArtifactCategory;
+use sweepie_core::scanner::VolumeScanner;
+use sweepie_core::scanner::dir_walk::DirWalkScanner;
 
 #[test]
 fn test_classify_node_modules_and_rust_target() {

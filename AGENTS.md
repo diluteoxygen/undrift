@@ -1,11 +1,11 @@
-# AGENTS.md — Undrift Repository Guidelines
+# AGENTS.md — Sweepie Repository Guidelines
 
-> Instructions for autonomous AI agents (Claude Code, Cursor, Copilot, Antigravity, Windsurf) contributing to Undrift.
+> Instructions for autonomous AI agents (Claude Code, Cursor, Copilot, Antigravity, Windsurf) contributing to Sweepie.
 
 ## 1. What This Repository Is
 
-Undrift is a **Windows-native disk space reclaiming instrument** for developers and power users.
-- **Core Engine (`/core`)**: Pure Rust library (`cdylib`) and CLI (`undrift`). Enumerates NTFS volumes at MFT speed (via `ntfs-reader` / `usn-journal-rs`), classifies developer build artifacts, enforces multi-point safety checks (Git working tree clean check, cloud placeholders, active file locks), and moves targets to the Recycle Bin by default.
+Sweepie is a **Windows-native disk space reclaiming instrument** for developers and power users.
+- **Core Engine (`/core`)**: Pure Rust library (`cdylib`) and CLI (`sweepie`). Enumerates NTFS volumes at MFT speed (via `ntfs-reader` / `usn-journal-rs`), classifies developer build artifacts, enforces multi-point safety checks (Git working tree clean check, cloud placeholders, active file locks), and moves targets to the Recycle Bin by default.
 - **UI Shell (`/app`)**: Native C# / .NET 8 + WinUI 3 interface with Mica material, Segoe UI Variable typography, progressive scan streaming, and review-before-delete dialogs.
 
 ## 2. Context Pointers (Progressive Disclosure)
@@ -46,7 +46,7 @@ cargo run -- scan . --json
 cargo build --release
 
 # Build WinUI 3 application (.NET 8 on Windows)
-dotnet build app/Undrift.App/Undrift.App.csproj
+dotnet build app/Sweepie.App/Sweepie.App.csproj
 ```
 
 ## 5. Coding Taste Profile (Matt Pocock Skills)

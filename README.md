@@ -1,8 +1,8 @@
-# Undrift
+# Sweepie
 
 > A precision, Windows-native space-reclaiming instrument for developers and power users. Built with a high-performance Rust MFT core and a native Fluent 2 WinUI 3 interface.
 
-[![CI](https://github.com/vikrant-singh/undrift/actions/workflows/ci.yml/badge.svg)](https://github.com/vikrant-singh/undrift/actions/workflows/ci.yml)
+[![CI](https://github.com/vikrant-singh/sweepie/actions/workflows/ci.yml/badge.svg)](https://github.com/vikrant-singh/sweepie/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust 2024](https://img.shields.io/badge/rust-2024%20edition-orange.svg)](https://www.rust-lang.org)
 [![.NET 8](https://img.shields.io/badge/.NET-8.0-purple.svg)](https://dotnet.microsoft.com)
@@ -16,7 +16,7 @@ Windows users typically juggle three imperfect utilities:
 - **Chris Titus's WinUtil**: An outstanding system-tweaks and software installer tool, but not an intelligent space analyzer.
 - **WizTree / TreeSize**: Fast at *finding* large folders, but completely lacking developer judgment on what is safe to remove.
 
-**Undrift** fills this vacuum:
+**Sweepie** fills this vacuum:
 1. **MFT-speed volume scanning**: Enumerates NTFS Master File Table records directly in single-digit seconds, just like WizTree.
 2. **Developer-aware judgment**: Recognizes orphaned `node_modules`, stale `target/` folders, unused `.venv` environments, `.gradle` caches, and Visual Studio build artifacts.
 3. **Safety guarantees**:
@@ -36,7 +36,7 @@ Windows users typically juggle three imperfect utilities:
 ## Architecture
 
 ```
-undrift/
+sweepie/
 ├── core/                     # Core Engine (Rust cdylib + CLI binary)
 │   ├── src/
 │   │   ├── scanner/          # NTFS MFT direct scanner + cross-platform fallback
@@ -45,10 +45,10 @@ undrift/
 │   │   ├── cleaner/          # Recycle Bin executor (trash) + history log
 │   │   ├── ffi.rs            # C-ABI exported functions for WinUI 3 P/Invoke
 │   │   ├── output.rs         # Human table & JSON formatters
-│   │   └── main.rs           # CLI binary (`undrift`)
+│   │   └── main.rs           # CLI binary (`sweepie`)
 │   └── tests/                # Integration tests (classification, git-dirty, cleanup)
 ├── app/                      # UI Shell (C# / .NET 8 + WinUI 3)
-│   ├── Undrift.App/
+│   ├── Sweepie.App/
 │   │   ├── CoreInterop/      # CLI subprocess bridge + native FFI bindings
 │   │   ├── ViewModels/       # MVVM State (MainViewModel, CandidateViewModel)
 │   │   ├── MainWindow.xaml   # Fluent 2 / Mica interface
@@ -84,35 +84,35 @@ undrift/
 
 ```bash
 # Human-readable table
-undrift scan C:
+sweepie scan C:
 
 # Include skipped / unsafe items with reasons
-undrift scan C: --all
+sweepie scan C: --all
 
 # Output progressive NDJSON stream events for real-time UI/automation
-undrift scan C: --json
+sweepie scan C: --json
 
 # Filter by minimum size (e.g. 50 MB)
-undrift scan C: --min-size 50
+sweepie scan C: --min-size 50
 ```
 
 ### 2. Clean selected artifacts
 
 ```bash
 # Move to Recycle Bin (safe, default)
-undrift clean "C:\dev\my-app\target" "C:\dev\web\node_modules"
+sweepie clean "C:\dev\my-app\target" "C:\dev\web\node_modules"
 
 # Dry-run preview
-undrift clean "C:\dev\my-app\target" --dry-run
+sweepie clean "C:\dev\my-app\target" --dry-run
 
 # Permanent deletion (explicit opt-in)
-undrift clean "C:\dev\my-app\target" --permanent
+sweepie clean "C:\dev\my-app\target" --permanent
 ```
 
 ### 3. Review cleanup history
 
 ```bash
-undrift history
+sweepie history
 ```
 
 ---

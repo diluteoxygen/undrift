@@ -1,9 +1,9 @@
 use git2::{Repository, Signature};
 use std::fs::{create_dir_all, write};
 use tempfile::TempDir;
-use undrift_core::model::candidate::GitRepoStatus;
-use undrift_core::model::{ArtifactCategory, ReclaimCandidate};
-use undrift_core::safety::SafetyPipeline;
+use sweepie_core::model::candidate::GitRepoStatus;
+use sweepie_core::model::{ArtifactCategory, ReclaimCandidate};
+use sweepie_core::safety::SafetyPipeline;
 
 #[test]
 fn test_git_dirty_safety_check() {
