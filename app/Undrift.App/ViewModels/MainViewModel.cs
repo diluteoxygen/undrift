@@ -43,6 +43,17 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _selectedCategoryFilter = "All";
 
+    [ObservableProperty]
+    private bool _hasScanned;
+
+    [ObservableProperty]
+    private bool _hasError;
+
+    [ObservableProperty]
+    private string _errorMessage = string.Empty;
+
+    public Func<List<CandidateViewModel>, Task<bool>>? ConfirmCleanCallback { get; set; }
+
     public ObservableCollection<string> AvailableCategories { get; } =
     [
         "All",
@@ -112,6 +123,9 @@ public partial class MainViewModel : ObservableObject
             }
         };
 
+        HasError = false;
+        ErrorMessage = string.Empty;
+
         try
         {
             ScanResult result = await _bridge.ScanAsync(
@@ -131,11 +145,14 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            HasError = true;
+            ErrorMessage = $"Scan error: {ex.Message}";
             StatusMessage = $"Scan error: {ex.Message}";
         }
         finally
         {
             IsScanning = false;
+            HasScanned = true;
         }
     }
 
@@ -165,7 +182,20 @@ public partial class MainViewModel : ObservableObject
         var selected = AllCandidates.Where(c => c.IsSelected).ToList();
         if (selected.Count == 0 || IsCleaning) return;
 
+        // Prompt user confirmation dialog with explicit target list and recycle bin setting
+        if (ConfirmCleanCallback != null)
+        {
+            bool proceed = await ConfirmCleanCallback(selected);
+            if (!proceed)
+            {
+                StatusMessage = "Cleanup cancelled by user.";
+                return;
+            }
+        }
+
         IsCleaning = true;
+        HasError = false;
+        ErrorMessage = string.Empty;
         StatusMessage = $"Reclaiming space ({selected.Count} items)...";
 
         try
@@ -196,7 +226,9 @@ public partial class MainViewModel : ObservableObject
 
             if (report.Failed != null && report.Failed.Count > 0)
             {
-                StatusMessage = $"Reclaimed {report.HumanTotalReclaimed}! {toRemove.Count} item(s) cleaned, but {report.Failed.Count} item(s) failed (e.g., {report.Failed.First().ErrorMessage}).";
+                HasError = true;
+                ErrorMessage = $"{report.Failed.Count} item(s) could not be cleaned (e.g. {report.Failed.First().ErrorMessage}).";
+                StatusMessage = $"Reclaimed {report.HumanTotalReclaimed}! {toRemove.Count} item(s) cleaned, but {report.Failed.Count} item(s) failed.";
             }
             else
             {
@@ -205,6 +237,8 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            HasError = true;
+            ErrorMessage = $"Cleanup error: {ex.Message}";
             StatusMessage = $"Cleanup error: {ex.Message}";
         }
         finally

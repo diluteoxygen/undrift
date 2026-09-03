@@ -47,25 +47,27 @@ public partial class CandidateViewModel : ObservableObject
         _ => Model.Category,
     };
 
+    // Segoe Fluent Icons glyph codes
     public string CategoryGlyph => Model.Category switch
     {
-        "node_modules" => "📦",
-        "rust_target" => "🦀",
-        "python_venv" => "🐍",
-        "python_cache" => "⚡",
-        "gradle_cache" => "🐘",
-        "maven_cache" => "🪶",
-        "nuget_cache" => "🔷",
-        "visual_studio" => "🟣",
-        "jetbrains" => "🧠",
-        "unity" => "🎮",
-        "stale_installer" => "💾",
-        "windows_update" => "🪟",
-        _ => "📁",
+        "node_modules" => "\uE8B7", // Package
+        "rust_target" => "\uE912", // Build / Tool
+        "python_venv" => "\uE770", // Branch / Env
+        "python_cache" => "\uE945", // Flash / Cache
+        "gradle_cache" => "\uE8F1", // Library / Box
+        "maven_cache" => "\uE8F1", // Library / Box
+        "nuget_cache" => "\uE71D", // Package
+        "visual_studio" => "\uE7C3", // Application
+        "jetbrains" => "\uE7C3", // Application
+        "unity" => "\uE7FC", // Game
+        "stale_installer" => "\uE896", // Download
+        "windows_update" => "\uE777", // Windows Update
+        _ => "\uE8B7", // Default
     };
 
     public string SafetyBadgeText => IsSafe ? "Safe to Reclaim" : "Review / Skipped";
-    public string SafetyBadgeBackground => IsSafe ? "#107C41" : "#D83B01";
+    public string SafetyBadgeBackground => IsSafe ? "#1F107C41" : "#1FD83B01";
+    public string SafetyBadgeForeground => IsSafe ? "#107C41" : "#D83B01";
 
     public bool HasHardlinks => Model.HasHardlinks;
     public string? SizeCaveat => Model.SizeCaveat;
