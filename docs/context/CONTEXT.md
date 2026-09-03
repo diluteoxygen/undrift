@@ -89,3 +89,31 @@ cargo bench
 ```
 The harness generates a multi-package monorepo fixture (Node, Rust, Python, and Downloads), benchmarks ingestion throughput, classification latency, and parallel safety pipeline time, printing a structured timing report.
 
+## 4. USN Change Journal & Persistent Incremental Index Architecture
+
+### The Full-Rescan Limitation
+Tools like WizTree, TreeSize, and prior versions of Undrift perform a full MFT enumeration from scratch on every run. On multi-terabyte drives with 2M–5M records, even optimized MFT parsing requires multiple seconds of disk I/O and tree allocation.
+
+### The Undrift Incremental Moat
+NTFS maintains an active **USN (Update Sequence Number) Change Journal** (`FSCTL_QUERY_USN_JOURNAL` / `FSCTL_READ_USN_JOURNAL`) that logs every file creation, deletion, rename, and size change. Undrift leverages this to make warm scans near-instantaneous:
+
+1. **Persistent Index Storage**:
+   - Following an initial cold scan, `PersistentIndex` serializes the record hierarchy and the volume's journal checkpoint (`usn_journal_id`, `last_usn`, `timestamp`) to `%LOCALAPPDATA%\undrift\indexes\<volume_id>.idx`.
+   - Storage uses compact binary encoding storing 64-bit record IDs, parent IDs, file attributes, sizes, and hardlink counts.
+
+2. **Delta-Only Ingestion**:
+   - On warm launch, Undrift queries the active USN journal for the volume's current `LowestUsn`, `NextUsn`, and `UsnJournalID`.
+   - If `saved_journal_id == current_journal_id` and `saved_usn >= LowestUsn`, the journal has not wrapped. Undrift reads only the delta changes between `saved_usn` and `NextUsn`.
+   - File creation, deletion, rename, and resize events are applied directly to the in-memory `ScanIndex` in milliseconds without scanning the drive.
+
+3. **Explicit Journal-Wrap & Discontinuity Handling**:
+   - USN journals are fixed-size ring buffers. If the system was offline for extended periods or heavy disk churn occurred, the journal wraps (`saved_usn < LowestUsn` or `saved_journal_id != current_journal_id`).
+   - Undrift explicitly detects this condition and automatically falls back to a clean full MFT scan, ensuring data integrity without silent corruption.
+
+4. **Hardlink-Aware Size Accounting & Caveats (pnpm / Package Stores)**:
+   - Package managers such as `pnpm` store package files in a global content-addressable store and create hardlinks inside each project's `node_modules`.
+   - Naive folder scanners sum logical file sizes, overstating reclaimable disk space by gigabytes when multiple projects share the same physical clusters.
+   - Undrift tracks the NTFS `hard_link_count` per record. When candidate artifacts contain files with `hard_link_count > 1`, Undrift computes `hardlink_shared_bytes`, flags `has_hardlinks: true`, and surfaces an honest engineering caveat:
+     *"Shared with other locations via hard links (e.g. pnpm store). Reclaiming this folder will not free these shared clusters while other links remain."*
+
+

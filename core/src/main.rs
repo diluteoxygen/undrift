@@ -124,24 +124,76 @@ fn run_scan(
     let target_path = Path::new(target_str);
     let start_total = Instant::now();
 
-    let scanner: Box<dyn VolumeScanner> = {
-        #[cfg(windows)]
+    #[allow(unused_variables, unused_mut)]
+    let index_file = undrift_core::scanner::persistent_index::get_index_path_for_volume(target_str);
+    #[allow(unused_variables, unused_mut)]
+    let mut index_opt = None;
+
+    #[cfg(windows)]
+    {
+        if let Ok(checkpoint) =
+            undrift_core::scanner::persistent_index::query_usn_checkpoint(target_path)
+            && let Ok(persistent) =
+                undrift_core::scanner::persistent_index::PersistentIndex::load_from_disk(
+                    &index_file,
+                )
         {
-            let is_root_drive = (target_str.len() <= 3 && target_str.contains(':')) || force_mft;
-            if is_root_drive {
-                Box::new(undrift_core::scanner::ntfs_mft::NtfsMftScanner::new())
-            } else {
-                Box::new(DirWalkScanner::new())
+            match persistent.verify_journal_continuity(&checkpoint) {
+                Ok(()) => {
+                    let mut warm_index = persistent.to_scan_index(target_path.to_path_buf());
+                    warm_index.scan_duration = start_total.elapsed();
+                    index_opt = Some(warm_index);
+                }
+                Err(e) => {
+                    if !as_json {
+                        eprintln!("  [USN Journal] {e}. Falling back to full MFT scan.");
+                    }
+                }
             }
         }
-        #[cfg(not(windows))]
-        {
-            let _ = force_mft;
-            Box::new(DirWalkScanner::new())
+    }
+
+    let index = match index_opt {
+        Some(idx) => idx,
+        None => {
+            let scanner: Box<dyn VolumeScanner> = {
+                #[cfg(windows)]
+                {
+                    let is_root_drive =
+                        (target_str.len() <= 3 && target_str.contains(':')) || force_mft;
+                    if is_root_drive {
+                        Box::new(undrift_core::scanner::ntfs_mft::NtfsMftScanner::new())
+                    } else {
+                        Box::new(DirWalkScanner::new())
+                    }
+                }
+                #[cfg(not(windows))]
+                {
+                    let _ = force_mft;
+                    Box::new(DirWalkScanner::new())
+                }
+            };
+
+            let scanned = scanner.scan(target_path)?;
+
+            #[cfg(windows)]
+            {
+                if let Ok(checkpoint) =
+                    undrift_core::scanner::persistent_index::query_usn_checkpoint(target_path)
+                {
+                    let persistent = undrift_core::scanner::persistent_index::PersistentIndex::new(
+                        target_str,
+                        checkpoint.journal_id,
+                        checkpoint.next_usn,
+                        &scanned,
+                    );
+                    let _ = persistent.save_to_disk(&index_file);
+                }
+            }
+
+            scanned
         }
     };
-
-    let index = scanner.scan(target_path)?;
 
     let mut pipeline = ClassifierPipeline::new(min_size_mb * 1024 * 1024);
     pipeline = pipeline.with_stale_days(stale_days);

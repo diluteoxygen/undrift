@@ -99,6 +99,8 @@ impl VolumeScanner for NtfsMftScanner {
                 });
             }
 
+            let link_count = file.header.link_count as u32;
+
             let record = FileRecord::new(
                 record_id,
                 parent_id,
@@ -109,7 +111,8 @@ impl VolumeScanner for NtfsMftScanner {
                 modified_at,
                 created_at,
                 attributes,
-            );
+            )
+            .with_hard_links(link_count);
 
             index.insert_record(record);
         }

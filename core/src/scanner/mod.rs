@@ -9,6 +9,7 @@ use thiserror::Error;
 pub mod ntfs_mft;
 
 pub mod dir_walk;
+pub mod persistent_index;
 
 #[derive(Error, Debug)]
 pub enum ScanError {
@@ -63,6 +64,78 @@ impl ScanIndex {
 
         self.records.insert(id, record);
         self.total_files_scanned += 1;
+    }
+
+    pub fn remove_record(&mut self, id: u64) -> Option<FileRecord> {
+        if let Some(record) = self.records.remove(&id) {
+            let parent_id = record.parent_id;
+            let name_lower = record.name.to_lowercase();
+
+            if let Some(children) = self.children_by_parent.get_mut(&parent_id) {
+                children.retain(|&c| c != id);
+            }
+            if let Some(name_map) = self.name_index.get_mut(&parent_id) {
+                name_map.remove(&name_lower);
+            }
+            if self.total_files_scanned > 0 {
+                self.total_files_scanned -= 1;
+            }
+            Some(record)
+        } else {
+            None
+        }
+    }
+
+    pub fn update_record(
+        &mut self,
+        id: u64,
+        new_name: Option<String>,
+        new_parent_id: Option<u64>,
+        new_size: Option<u64>,
+    ) {
+        if let Some(record) = self.records.get_mut(&id) {
+            let old_parent_id = record.parent_id;
+            let old_name_lower = record.name.to_lowercase();
+
+            if let Some(size) = new_size {
+                record.size_bytes = size;
+            }
+
+            let parent_changed = new_parent_id.is_some_and(|p| p != old_parent_id);
+            let name_changed = new_name.as_ref().is_some_and(|n| n != &record.name);
+
+            if parent_changed || name_changed {
+                let final_parent = new_parent_id.unwrap_or(old_parent_id);
+                let final_name = new_name.unwrap_or_else(|| record.name.clone());
+                let final_name_lower = final_name.to_lowercase();
+
+                if parent_changed {
+                    if let Some(children) = self.children_by_parent.get_mut(&old_parent_id) {
+                        children.retain(|&c| c != id);
+                    }
+                    if let Some(name_map) = self.name_index.get_mut(&old_parent_id) {
+                        name_map.remove(&old_name_lower);
+                    }
+
+                    self.children_by_parent
+                        .entry(final_parent)
+                        .or_default()
+                        .push(id);
+                } else if name_changed
+                    && let Some(name_map) = self.name_index.get_mut(&old_parent_id)
+                {
+                    name_map.remove(&old_name_lower);
+                }
+
+                self.name_index
+                    .entry(final_parent)
+                    .or_default()
+                    .insert(final_name_lower, id);
+
+                record.parent_id = final_parent;
+                record.name = final_name;
+            }
+        }
     }
 
     pub fn get_record(&self, id: u64) -> Option<&FileRecord> {
@@ -129,14 +202,9 @@ impl ScanIndex {
         path
     }
 
-    /// Calculate total bytes, file count, and latest modified timestamp for a subtree
-    pub fn calculate_subtree_stats(
-        &self,
-        root_record_id: u64,
-    ) -> (u64, u64, Option<DateTime<Utc>>) {
-        let mut total_bytes = 0u64;
-        let mut total_files = 0u64;
-        let mut latest_modified: Option<DateTime<Utc>> = None;
+    /// Calculate total bytes, file count, latest modified timestamp, and hardlink shared bytes for a subtree
+    pub fn calculate_subtree_stats(&self, root_record_id: u64) -> SubtreeStats {
+        let mut stats = SubtreeStats::default();
 
         let mut queue = VecDeque::new();
         queue.push_back(root_record_id);
@@ -149,12 +217,15 @@ impl ScanIndex {
                 }
 
                 if !record.is_dir {
-                    total_bytes += record.size_bytes;
-                    total_files += 1;
+                    stats.total_bytes += record.size_bytes;
+                    stats.total_files += 1;
+                    if record.hard_link_count > 1 {
+                        stats.hardlink_shared_bytes += record.size_bytes;
+                    }
                 }
 
                 if let Some(mod_time) = record.modified_at {
-                    latest_modified = Some(match latest_modified {
+                    stats.latest_modified = Some(match stats.latest_modified {
                         Some(prev) => prev.max(mod_time),
                         None => mod_time,
                     });
@@ -168,8 +239,16 @@ impl ScanIndex {
             }
         }
 
-        (total_bytes, total_files, latest_modified)
+        stats
     }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct SubtreeStats {
+    pub total_bytes: u64,
+    pub total_files: u64,
+    pub latest_modified: Option<DateTime<Utc>>,
+    pub hardlink_shared_bytes: u64,
 }
 
 pub trait VolumeScanner: Send + Sync {

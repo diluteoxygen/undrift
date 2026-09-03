@@ -12,7 +12,7 @@ pub const FILE_ATTRIBUTE_OFFLINE: u32 = 0x00001000;
 pub const FILE_ATTRIBUTE_RECALL_ON_OPEN: u32 = 0x00040000;
 pub const FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS: u32 = 0x00400000;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileRecord {
     pub id: u64,
     pub parent_id: u64,
@@ -25,6 +25,7 @@ pub struct FileRecord {
     pub attributes: u32,
     pub is_reparse_point: bool,
     pub is_cloud_placeholder: bool,
+    pub hard_link_count: u32,
 }
 
 impl FileRecord {
@@ -59,6 +60,12 @@ impl FileRecord {
             attributes,
             is_reparse_point,
             is_cloud_placeholder,
+            hard_link_count: 1,
         }
+    }
+
+    pub fn with_hard_links(mut self, count: u32) -> Self {
+        self.hard_link_count = count.max(1);
+        self
     }
 }

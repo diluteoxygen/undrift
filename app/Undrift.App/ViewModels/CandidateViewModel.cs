@@ -66,4 +66,7 @@ public partial class CandidateViewModel : ObservableObject
 
     public string SafetyBadgeText => IsSafe ? "Safe to Reclaim" : "Review / Skipped";
     public string SafetyBadgeBackground => IsSafe ? "#107C41" : "#D83B01";
+
+    public bool HasHardlinks => Model.HasHardlinks;
+    public string? SizeCaveat => Model.SizeCaveat;
 }

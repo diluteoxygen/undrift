@@ -110,11 +110,23 @@ impl ClassifierPipeline {
 
             for rule in &self.rules {
                 if let Some((category, reason)) = rule.evaluate(index, record) {
-                    let (size_bytes, file_count, latest_modified) = if record.is_dir {
-                        index.calculate_subtree_stats(record.id)
-                    } else {
-                        (record.size_bytes, 1, record.modified_at)
-                    };
+                    let (size_bytes, file_count, latest_modified, hardlink_shared_bytes) =
+                        if record.is_dir {
+                            let stats = index.calculate_subtree_stats(record.id);
+                            (
+                                stats.total_bytes,
+                                stats.total_files,
+                                stats.latest_modified,
+                                stats.hardlink_shared_bytes,
+                            )
+                        } else {
+                            let shared = if record.hard_link_count > 1 {
+                                record.size_bytes
+                            } else {
+                                0
+                            };
+                            (record.size_bytes, 1, record.modified_at, shared)
+                        };
 
                     if size_bytes < self.min_size_bytes {
                         continue;
@@ -132,7 +144,8 @@ impl ClassifierPipeline {
                         true, // initially true, safety pipeline will validate
                         reason,
                         GitRepoStatus::NotInRepo,
-                    );
+                    )
+                    .with_hardlink_info(hardlink_shared_bytes);
 
                     candidate_ids.insert(record.id);
                     candidates.push(candidate);

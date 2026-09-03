@@ -103,6 +103,21 @@ impl VolumeScanner for DirWalkScanner {
 
             let file_name = entry.file_name().to_str().unwrap_or("").to_string();
 
+            #[cfg(unix)]
+            let hard_link_count = {
+                use std::os::unix::fs::MetadataExt;
+                metadata.as_ref().map(|m| m.nlink() as u32).unwrap_or(1)
+            };
+
+            #[cfg(windows)]
+            let hard_link_count = {
+                use std::os::windows::fs::MetadataExt;
+                metadata.as_ref().map(|m| m.number_of_links()).unwrap_or(1)
+            };
+
+            #[cfg(not(any(unix, windows)))]
+            let hard_link_count = 1u32;
+
             let record = FileRecord::new(
                 current_id,
                 parent_id,
@@ -113,7 +128,8 @@ impl VolumeScanner for DirWalkScanner {
                 modified_at,
                 created_at,
                 attributes,
-            );
+            )
+            .with_hard_links(hard_link_count);
 
             index.insert_record(record);
         }

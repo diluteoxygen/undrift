@@ -47,6 +47,9 @@ pub struct ReclaimCandidate {
     pub safety_reason: String,
     pub git_status: GitRepoStatus,
     pub default_selected: bool,
+    pub hardlink_shared_bytes: u64,
+    pub has_hardlinks: bool,
+    pub size_caveat: Option<String>,
 }
 
 impl ReclaimCandidate {
@@ -78,7 +81,22 @@ impl ReclaimCandidate {
             safety_reason,
             git_status,
             default_selected,
+            hardlink_shared_bytes: 0,
+            has_hardlinks: false,
+            size_caveat: None,
         }
+    }
+
+    pub fn with_hardlink_info(mut self, shared_bytes: u64) -> Self {
+        if shared_bytes > 0 {
+            self.hardlink_shared_bytes = shared_bytes;
+            self.has_hardlinks = true;
+            self.size_caveat = Some(format!(
+                "Contains hardlinked files sharing {} with other locations (e.g. pnpm store); actual freed disk space may be less than logical size.",
+                format_size(shared_bytes)
+            ));
+        }
+        self
     }
 }
 

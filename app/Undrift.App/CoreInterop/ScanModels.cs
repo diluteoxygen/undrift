@@ -65,6 +65,15 @@ public sealed record CandidateItem
 
     [JsonPropertyName("default_selected")]
     public bool DefaultSelected { get; init; }
+
+    [JsonPropertyName("hardlink_shared_bytes")]
+    public ulong HardlinkSharedBytes { get; init; }
+
+    [JsonPropertyName("has_hardlinks")]
+    public bool HasHardlinks { get; init; }
+
+    [JsonPropertyName("size_caveat")]
+    public string? SizeCaveat { get; init; }
 }
 
 public sealed record GitStatusItem
