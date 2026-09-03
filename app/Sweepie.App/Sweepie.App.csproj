@@ -46,7 +46,7 @@
   </ItemGroup>
 
   <!-- Automatically generate resources.pri for unpackaged execution when building via dotnet CLI -->
-  <Target Name="GeneratePriFile" AfterTargets="Build" Condition="!Exists('$(TargetDir)resources.pri')">
+  <Target Name="GeneratePriFile" AfterTargets="Build">
     <PropertyGroup>
       <_MakePriExe>$(UserProfile)\.nuget\packages\microsoft.windows.sdk.buildtools\10.0.26100.1742\bin\10.0.26100.0\x64\makepri.exe</_MakePriExe>
     </PropertyGroup>

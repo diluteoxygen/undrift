@@ -227,10 +227,11 @@
                                             <!-- Category icon -->
                                             <FontIcon Grid.Column="1"
                                                       Glyph="{x:Bind CategoryGlyph}"
-                                                      FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                                      FontFamily="{ThemeResource SymbolThemeFontFamily}"
                                                       FontSize="18"
                                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
                                                       VerticalAlignment="Center" />
+
 
                                             <!-- Category name + friendly path + description -->
                                             <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center">
