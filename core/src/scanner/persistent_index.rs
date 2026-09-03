@@ -274,7 +274,7 @@ pub fn query_usn_checkpoint(drive_path: &Path) -> Result<UsnCheckpoint, Incremen
 
     Ok(UsnCheckpoint {
         journal_id: journal_data.UsnJournalID,
-        lowest_usn: journal_data.LowestUsn,
+        lowest_usn: journal_data.LowestValidUsn,
         next_usn: journal_data.NextUsn,
     })
 }

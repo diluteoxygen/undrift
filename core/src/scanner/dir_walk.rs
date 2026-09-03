@@ -111,8 +111,26 @@ impl VolumeScanner for DirWalkScanner {
 
             #[cfg(windows)]
             let hard_link_count = {
-                use std::os::windows::fs::MetadataExt;
-                metadata.as_ref().map(|m| m.number_of_links()).unwrap_or(1)
+                use std::os::windows::io::AsRawHandle;
+                if !is_dir {
+                    std::fs::File::open(&path)
+                        .ok()
+                        .and_then(|f| {
+                            let mut info =
+                                windows::Win32::Storage::FileSystem::BY_HANDLE_FILE_INFORMATION::default();
+                            let handle = windows::Win32::Foundation::HANDLE(f.as_raw_handle() as _);
+                            unsafe {
+                                windows::Win32::Storage::FileSystem::GetFileInformationByHandle(
+                                    handle, &mut info,
+                                )
+                                .ok()
+                                .map(|_| info.nNumberOfLinks)
+                            }
+                        })
+                        .unwrap_or(1)
+                } else {
+                    1
+                }
             };
 
             #[cfg(not(any(unix, windows)))]
