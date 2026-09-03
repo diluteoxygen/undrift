@@ -13,9 +13,9 @@
 
 ---
 
-Windows doesn't have a good answer to "where did my disk space go." CCleaner's brand is carrying real damage at this point — the 2017 Avast acquisition was followed within two months by a supply-chain compromise that hit over two million installs, a second breach in 2019, and telemetry and upsell behavior that's kept it off most recommendation lists since. Chris Titus's WinUtil is a genuinely good tweaks-and-installer tool, but it has no opinion about your disk at all. WizTree and TreeSize scan fast and show you what's big, but they have zero judgment about what's actually safe to remove.
+Sweepie reads your NTFS Master File Table directly, so a full drive scan takes seconds, not minutes. It knows what a dev machine actually accumulates (`node_modules`, `target/`, `.venv`, IDE caches, dead installers) and only flags what it can prove is safe to remove. Nothing gets deleted without a review pass, and Recycle Bin is always the default.
 
-Sweepie does the part none of them do: read the NTFS Master File Table directly instead of walking the filesystem, so a full-volume scan takes single-digit seconds — and then apply real judgment about what's dead weight versus what's still doing something.
+Rust core, native WinUI 3 shell in C#/.NET. No Electron, no telemetry, no background service.
 
 ## What it finds
 
@@ -44,21 +44,21 @@ Nothing gets offered for removal unless it clears all of this:
 - It isn't currently held open by another process
 - It isn't a symlink or junction pointing somewhere unexpected
 
-And the same checks run again immediately before deletion, not just at scan time — state can change between the two. Recycle Bin is the default action; permanent deletion is an explicit opt-in, every time.
+The same checks run again immediately before deletion, not just at scan time, since state can change in between. Recycle Bin is the default action. Permanent deletion is an explicit opt-in, every time.
 
 ## Fast the first time, faster after that
 
-The first scan of a volume reads the MFT directly. Every scan after that reads only what's changed since, via the NTFS USN journal, instead of rescanning from zero — so a second run reflects the current state of your disk almost instantly. If the journal's been rotated past what Sweepie last saw, it falls back to a full rescan automatically rather than working off a stale picture.
+The first scan of a volume reads the MFT directly. Every scan after that reads only what changed since, via the NTFS USN journal, instead of rescanning from zero, so a second run reflects the current state of your disk almost instantly. If the journal's been rotated past what Sweepie last saw, it falls back to a full rescan automatically instead of working off a stale picture.
 
 ## What this deliberately isn't
 
-No registry cleaner, no driver updater, no bundled toolbars, no subscription nags. No telemetry and no network calls beyond an explicit update check — nothing runs as a background service. No score, no currency, no gamification. These are excluded on purpose, not missing by accident.
+No registry cleaner, no driver updater, no bundled toolbars, no subscription nags. No telemetry and no network calls beyond an explicit update check, and nothing runs as a background service. No score, no currency, no gamification. These are excluded on purpose, not missing by accident.
 
 ## Architecture
 
 ```
 undrift/
-├── core/                          # Rust engine — cdylib + CLI binary
+├── core/                          # Rust engine: cdylib + CLI binary
 │   ├── src/
 │   │   ├── scanner/                # MFT scanner, USN-journal incremental index, dir-walk fallback
 │   │   ├── classifier/              # Per-ecosystem detection rules
@@ -81,7 +81,7 @@ undrift/
 # Human-readable table
 sweepie scan C:
 
-# Streams scan progress, then each finding, then a final summary — one JSON object per line
+# Streams scan progress, then each finding, then a final summary (one JSON object per line)
 sweepie scan C: --json
 
 # Include items that were skipped, with the reason why
@@ -93,7 +93,7 @@ sweepie clean "C:\dev\my-app\target" "C:\dev\web\node_modules"
 # Preview without deleting anything
 sweepie clean "C:\dev\my-app\target" --dry-run
 
-# Permanent deletion — has to be asked for explicitly
+# Permanent deletion has to be asked for explicitly
 sweepie clean "C:\dev\my-app\target" --permanent
 
 # What's been cleaned before, and how much space it recovered
